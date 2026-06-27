@@ -1,0 +1,289 @@
+{
+  "main": {
+    "id": "5474c0b2d450f169",
+    "type": "split",
+    "children": [
+      {
+        "id": "f07e917a9ac38557",
+        "type": "split",
+        "children": [
+          {
+            "id": "4a3c36ff1a39c915",
+            "type": "tabs",
+            "children": [
+              {
+                "id": "60b1fb67c95529b4",
+                "type": "leaf",
+                "state": {
+                  "type": "graph",
+                  "state": {},
+                  "icon": "lucide-git-fork",
+                  "title": "Graph view"
+                }
+              }
+            ]
+          },
+          {
+            "id": "78e1091b8627a5ca",
+            "type": "tabs",
+            "children": [
+              {
+                "id": "1836a36304bb7ac6",
+                "type": "leaf",
+                "pinned": true,
+                "state": {
+                  "type": "terminal:terminal",
+                  "state": {
+                    "terminal:terminal": {
+                      "cwd": "C:\\Users\\Admin\\Documents\\AI",
+                      "focus": false,
+                      "profile": {
+                        "args": [],
+                        "environment": [],
+                        "executable": "C:\\Windows\\System32\\cmd.exe",
+                        "followTheme": true,
+                        "name": "",
+                        "platforms": {
+                          "win32": true
+                        },
+                        "pythonExecutable": "python3",
+                        "restoreHistory": false,
+                        "rightClickAction": "copyPaste",
+                        "successExitCodes": [
+                          "0",
+                          "SIGINT",
+                          "SIGTERM"
+                        ],
+                        "terminalOptions": {
+                          "documentOverride": null
+                        },
+                        "type": "integrated",
+                        "useWin32Conhost": true
+                      },
+                      "profileSourceId": "win32IntegratedDefault",
+                      "serial": null,
+                      "userTitle": ""
+                    }
+                  },
+                  "pinned": true,
+                  "icon": "terminal",
+                  "title": "Terminal: OpenCode"
+                }
+              }
+            ]
+          }
+        ],
+        "direction": "horizontal"
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "67d84070776fe666",
+    "type": "split",
+    "children": [
+      {
+        "id": "e2acb149cd6c28e4",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "39d5c640d1ceee91",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "48a473aee64b3546",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "9fc1b00c8d83b1f5",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "811de9cde77d1531",
+    "type": "split",
+    "children": [
+      {
+        "id": "404440e4172f83d5",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "3280c5a4f4512493",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "2026-06-25.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for 2026-06-25"
+            }
+          },
+          {
+            "id": "a4ff6e086817254e",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "2026-06-25.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from 2026-06-25"
+            }
+          },
+          {
+            "id": "9933fc1fe85a2036",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "9598605cf266355d",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "3903a596043c8c3e",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Volume Profile.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Volume Profile"
+            }
+          }
+        ],
+        "currentTab": 4
+      }
+    ],
+    "direction": "horizontal",
+    "width": 200,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false,
+      "obsidian42-brat:BRAT": false,
+      "terminal:Open terminal": false,
+      "obsidian-git:Open Git source control": false
+    }
+  },
+  "active": "1836a36304bb7ac6",
+  "lastOpenFiles": [
+    "Untitled.canvas",
+    "memory.md",
+    "Volume Profile.md",
+    "WORKSPACE",
+    "Strategies/funded_edge3.py",
+    "Strategies/funded_edge2.py",
+    "Strategies/funded_edge.py",
+    "Strategies/unique_edge.py",
+    "Strategies/brute_force3.py",
+    "Strategies/brute_force2.py",
+    "Strategies/brute_force.py",
+    "Strategies/combo_validate.py",
+    "Strategies/intraday_1h_test.py",
+    "Strategies/GBPUSD IBS MR Optimized.md",
+    "Strategies/GBPUSD IBS Mean Reversion.md",
+    "Strategies/QQQ Dual-Signal Edge.md",
+    "Strategies/All Strategies Backtest.md",
+    "MOC - Trading.md",
+    "Strategies/Volume-Scaled IBS.md",
+    "Niche Trading Strategies II.md",
+    "Strategies/IBS Mean Reversion.md",
+    "Niche Trading Strategies.md",
+    "Concepts/Strategy Development.md",
+    "Concepts/Backtesting.md",
+    "Building and Backtesting Strategies.md",
+    "Concepts/Market Microstructure.md",
+    "Concepts/Iceberg Orders.md",
+    "Concepts/Spoofing and Layering.md",
+    "Concepts/Delta Divergence.md",
+    "Concepts/Absorption.md",
+    "Concepts/Order Book.md",
+    "Concepts/The Throwback (Post-Breakout Retest).md",
+    "Images/Head Fake Diagram.svg",
+    "Images/Throwback Setup.svg",
+    "Images/Volume Profile Anatomy.svg",
+    "Strategies/Volume Profile Throwback.md",
+    "Reflections/Volume Profile - Key Insights.md",
+    "Concepts/Head Fakes (Retail Traps).md",
+    "Concepts/HVN vs LVN Actionability.md",
+    "Untitled 4.canvas",
+    "Untitled 3.canvas",
+    "Untitled 2.canvas",
+    "Untitled 1.canvas"
+  ]
+}

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 500" font-family="Inter, Segoe UI, sans-serif">
+  <rect width="600" height="500" fill="#1e1e2e" rx="8"/>
+
+  <!-- Title -->
+  <text x="300" y="30" fill="#cdd6f4" font-size="18" font-weight="bold" text-anchor="middle">Head Fake (Retail Trap)</text>
+
+  <!-- Prior range -->
+  <rect x="50" y="280" width="100" height="120" fill="#2a2a3e" rx="3" stroke="#6c7086" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="100" y="395" fill="#6c7086" font-size="11" text-anchor="middle">Prior Range</text>
+
+  <!-- Prior high line -->
+  <line x1="50" y1="280" x2="550" y2="280" stroke="#a6e3a1" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="140" y="275" fill="#a6e3a1" font-size="11" text-anchor="end">Prior High</text>
+
+  <!-- Price action -->
+  <!-- Up to prior high -->
+  <path d="M100,350 L140,340 L180,330 L220,310 L260,290 L290,280" fill="none" stroke="#a6adc8" stroke-width="2"/>
+
+  <!-- Fake breakout (sweep) -->
+  <path d="M290,280 L310,260 L320,240 L330,235 L340,240" fill="none" stroke="#f9e2af" stroke-width="2"/>
+
+  <!-- Immediate rejection / rollover -->
+  <path d="M340,240 L360,260 L380,290 L410,320 L440,340 L470,350 L500,355" fill="none" stroke="#f38ba8" stroke-width="2.5"/>
+
+  <!-- Trap label -->
+  <rect x="310" y="225" width="80" height="20" fill="#f9e2af" opacity="0.2" rx="4"/>
+  <text x="350" y="239" fill="#f9e2af" font-size="11" font-weight="bold" text-anchor="middle">Trap!</text>
+  <text x="410" y="225" fill="#f38ba8" font-size="11">Retail buys →</text>
+
+  <!-- Target line to POC -->
+  <line x1="50" y1="340" x2="500" y2="340" stroke="#6c7086" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="370" y="355" fill="#6c7086" font-size="11">Target: POC (fair value)</text>
+
+  <!-- Signs of weakness annotations -->
+  <circle cx="330" cy="238" r="15" fill="none" stroke="#f9e2af" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <text x="250" y="225" fill="#f9e2af" font-size="10" text-anchor="end">① Sweep — punchy</text>
+  <text x="250" y="240" fill="#f9e2af" font-size="10" text-anchor="end">buy, then</text>
+  <text x="250" y="255" fill="#f9e2af" font-size="10" text-anchor="end">dies immediately</text>
+
+  <circle cx="370" cy="275" r="12" fill="none" stroke="#f38ba8" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <text x="420" y="280" fill="#f38ba8" font-size="10">② Drifting lower</text>
+  <text x="420" y="295" fill="#f38ba8" font-size="10">— no buyers</text>
+
+  <!-- Volume below -->
+  <text x="100" y="440" fill="#6c7086" font-size="11" text-anchor="middle">Vol (range)</text>
+  <rect x="70" y="445" width="80" height="25" fill="#3b82f6" opacity="0.4" rx="2"/>
+
+  <text x="220" y="440" fill="#f38ba8" font-size="11" text-anchor="middle">Vol (breakout)</text>
+  <rect x="170" y="445" width="100" height="25" fill="#f38ba8" opacity="0.3" rx="2"/>
+
+  <text x="370" y="440" fill="#f38ba8" font-size="11" text-anchor="middle">Vol (rejection)</text>
+  <rect x="310" y="445" width="120" height="25" fill="#f38ba8" opacity="0.6" rx="2"/>
+
+  <!-- Key insight -->
+  <text x="300" y="490" fill="#6c7086" font-size="11" text-anchor="middle">Key: Price can't hold above prior high. Minimal follow-through → no conviction.</text>
+</svg>
