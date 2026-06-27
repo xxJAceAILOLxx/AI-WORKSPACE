@@ -4,7 +4,7 @@
     "type": "split",
     "children": [
       {
-        "id": "f07e917a9ac38557",
+        "id": "8311e6a550e78e0c",
         "type": "split",
         "children": [
           {
@@ -24,11 +24,11 @@
             ]
           },
           {
-            "id": "78e1091b8627a5ca",
+            "id": "e8a5bdd1ab7a86d7",
             "type": "tabs",
             "children": [
               {
-                "id": "1836a36304bb7ac6",
+                "id": "b629032f8d7edec8",
                 "type": "leaf",
                 "pinned": true,
                 "state": {
@@ -67,7 +67,7 @@
                   },
                   "pinned": true,
                   "icon": "terminal",
-                  "title": "Terminal: cmd"
+                  "title": "Terminal: Administrator: C:\\Windows\\System32\\conhost.exe"
                 }
               }
             ]
@@ -240,7 +240,7 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "60b1fb67c95529b4",
+  "active": "b629032f8d7edec8",
   "lastOpenFiles": [
     "pull.bat",
     "test.md",
