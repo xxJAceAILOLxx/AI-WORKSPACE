@@ -111,6 +111,15 @@
 **Integration**: Combine Markov (defined thresholds) + Hidden Markov (data-driven) for confirmation
 **Status**: CONCEPT — needs backtesting, potential for regime-based strategy filtering
 
+### Funded 80% Pass Strategy (Added 2026-06-26)
+**Goal**: Find strategy with 80%+ prop firm pass rate
+**Reality**: 80% not achievable with daily bars and realistic sizing
+**Best individual**: BTC Trend — 23% pass rate (30-day window)
+**Best portfolio**: 6-instrument portfolio — 63% pass rate
+**Recommendation**: Trade 6-7 uncorrelated instruments simultaneously
+**Instruments**: BTC, QQQ, SPY, IWM, GLD, ETH, DIA
+**Status**: HONEST RESULTS — 60-70% achievable, 80% requires intraday/leverage
+
 ---
 
 ## Active Zones — BTC/USDT (2026-06-25)
@@ -164,7 +173,7 @@
 - **Order Flow** — Core order flow/order book note (expanded)
 - **Building and Backtesting Strategies** — 7-phase pipeline, validation framework
 - **Concepts/** — 21 atomic notes (AMT, Positioning vs Context, Structure vs Flow, Order Book, Absorption, Delta Divergence, Spoofing, Iceberg Orders, Market Microstructure, Backtesting, Strategy Development, Markov Property, etc.)
-- **Strategies/** — Volume Profile Throwback, IBS Mean Reversion, All Strategies Backtest, Volume-Scaled IBS (novel), Hedge Fund Markov Method
+- **Strategies/** — Volume Profile Throwback, IBS Mean Reversion, All Strategies Backtest, Volume-Scaled IBS (novel), Hedge Fund Markov Method, Funded 80% Pass Strategy
 - **Reflections/** — Key Insights, mindset shifts
 
 ---

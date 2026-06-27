@@ -242,6 +242,7 @@
   },
   "active": "60b1fb67c95529b4",
   "lastOpenFiles": [
+    "Strategies/Funded 80% Pass Strategy.md",
     "Strategies/funded_80_pass.py",
     "Concepts/Markov Property.md",
     "Strategies/Hedge Fund Markov Method.md",
@@ -259,7 +260,6 @@
     "Strategies/brute_force3.py",
     "Strategies/brute_force2.py",
     "Strategies/brute_force.py",
-    "Strategies/combo_validate.py",
     "Strategies/GBPUSD IBS MR Optimized.md",
     "Strategies/GBPUSD IBS Mean Reversion.md",
     "Strategies/QQQ Dual-Signal Edge.md",

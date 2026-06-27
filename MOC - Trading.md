@@ -54,3 +54,4 @@
 - [[Strategies/All Strategies Backtest]] — 12 strategies, 10-year test, QQQ MR wins
 - [[Strategies/Volume-Scaled IBS]] — novel: IBS threshold scales with volume, 9/10 checklist
 - [[Strategies/Hedge Fund Markov Method]] — state-based trading using Markov chains, transition matrices, stickiness scores
+- [[Strategies/Funded 80% Pass Strategy]] — prop firm pass rate analysis, portfolio approach (60-72% achievable)
