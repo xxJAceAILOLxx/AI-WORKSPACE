@@ -43,6 +43,7 @@
 ### Strategy Development & Backtesting
 - [[Backtesting]] — validation, overfitting, walk-forward, Monte Carlo
 - [[Strategy Development]] — hypothesis to rules to code
+- [[Markov Property]] — future depends only on current state, not history
 
 ## Reflections
 - [[Reflections/Volume Profile - Key Insights]] — personal takeaways, mindset shifts
@@ -52,3 +53,4 @@
 - [[Strategies/IBS Mean Reversion]] — IBS + 200 SMA + TOM, backtested 2005-2025
 - [[Strategies/All Strategies Backtest]] — 12 strategies, 10-year test, QQQ MR wins
 - [[Strategies/Volume-Scaled IBS]] — novel: IBS threshold scales with volume, 9/10 checklist
+- [[Strategies/Hedge Fund Markov Method]] — state-based trading using Markov chains, transition matrices, stickiness scores

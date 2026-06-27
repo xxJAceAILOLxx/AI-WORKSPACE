@@ -101,6 +101,16 @@
 - **Monte Carlo**: 100% survival
 - **Status**: BEST EQUITY STRATEGY — Sharpe below 1.0 but solid edge
 
+### Hedge Fund Markov Method (Added 2026-06-26)
+**Source**: Quant video explaining hedge fund state-based trading
+**Core**: Markov chains + state classification + transition matrices
+**States**: Bull (>5% in 20d), Sideways (-5% to +5%), Bear (<-5% in 20d)
+**Signal**: P(Bull tomorrow) - P(Bear tomorrow) = directional confidence
+**Key Insight**: Stickiness — trends persist mathematically (bull stays bull)
+**Improvement**: Use non-overlapping 20d windows for accurate stickiness scores
+**Integration**: Combine Markov (defined thresholds) + Hidden Markov (data-driven) for confirmation
+**Status**: CONCEPT — needs backtesting, potential for regime-based strategy filtering
+
 ---
 
 ## Active Zones — BTC/USDT (2026-06-25)
@@ -153,8 +163,8 @@
 - **Volume Profile** — Core note (155 lines)
 - **Order Flow** — Core order flow/order book note (expanded)
 - **Building and Backtesting Strategies** — 7-phase pipeline, validation framework
-- **Concepts/** — 20 atomic notes (AMT, Positioning vs Context, Structure vs Flow, Order Book, Absorption, Delta Divergence, Spoofing, Iceberg Orders, Market Microstructure, Backtesting, Strategy Development, etc.)
-- **Strategies/** — Volume Profile Throwback, IBS Mean Reversion, All Strategies Backtest, Volume-Scaled IBS (novel)
+- **Concepts/** — 21 atomic notes (AMT, Positioning vs Context, Structure vs Flow, Order Book, Absorption, Delta Divergence, Spoofing, Iceberg Orders, Market Microstructure, Backtesting, Strategy Development, Markov Property, etc.)
+- **Strategies/** — Volume Profile Throwback, IBS Mean Reversion, All Strategies Backtest, Volume-Scaled IBS (novel), Hedge Fund Markov Method
 - **Reflections/** — Key Insights, mindset shifts
 
 ---
