@@ -138,6 +138,17 @@
 
 ---
 
+## Vault Sync Setup
+- **Primary remote**: GitLab → https://gitlab.com/aitrading69/Nigger-project.git
+- **Secondary remote**: GitHub → https://github.com/xxJAceAILOLxx/AI-WORKSPACE.git
+- **Plugin**: obsidian-git (auto-commit, auto-push, auto-pull)
+- **Auto-pull interval**: 3 minutes
+- **Auto-push interval**: 10 minutes
+- **Auto-save interval**: 5 minutes
+- **Auto-pull on boot**: enabled
+
+---
+
 ## Vault Structure
 - **Volume Profile** — Core note (155 lines)
 - **Order Flow** — Core order flow/order book note (expanded)
