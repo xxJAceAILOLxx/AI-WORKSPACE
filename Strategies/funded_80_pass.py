@@ -40,7 +40,7 @@ INITIAL = 100000
 # ============================================================
 # FAST PROP FIRM SIM (vectorized where possible)
 # ============================================================
-def run_fast(signals, closes, opens, hold=5, risk=0.02, sizing='dynamic', regime=None):
+def run_fast(signals, closes, opens, regime, hold=5, risk=0.02, sizing='dynamic'):
     """Fast scalar sim. Returns (passed, dd, ret, trades)."""
     cap = INITIAL; max_cap = INITIAL; n_trades = 0
     pos = 0; entry = 0; days_held = 0; day_count = 0
@@ -171,7 +171,7 @@ for inst in inst_list:
                         if w+30 > len(df): break
                         ws = sig.iloc[w:w+30]; wc = df['Close'].iloc[w:w+30]
                         wo = df['Open'].iloc[w:w+30]; wr = reg.iloc[w:w+30]
-                        passed, dd, ret, nt = run_fast(ws, wc, wo, hold, risk, sizing, regime_m if regime_m!='none' else None, wr)
+                        passed, dd, ret, nt = run_fast(ws, wc, wo, wr, hold, risk, sizing)
                         total += 1
                         if passed: pass_ct += 1
                         rets.append(ret); dds.append(dd)
@@ -198,7 +198,7 @@ for i, inst1 in enumerate(inst_list):
                                 reg = make_regime(df, regime_m)
                                 ws = sig.iloc[w:w+30]; wc = df['Close'].iloc[w:w+30]
                                 wo = df['Open'].iloc[w:w+30]; wr = reg.iloc[w:w+30]
-                                passed, dd, ret, nt = run_fast(ws, wc, wo, hold, risk/2, sizing, regime_m if regime_m!='none' else None, wr)
+                                passed, dd, ret, nt = run_fast(ws, wc, wo, wr, hold, risk/2, sizing)
                                 total += 1
                                 if passed: pass_ct += 1
                                 rets.append(ret); dds.append(dd)
