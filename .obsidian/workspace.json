@@ -67,7 +67,7 @@
                   },
                   "pinned": true,
                   "icon": "terminal",
-                  "title": "Terminal: OpenCode"
+                  "title": "Terminal: cmd"
                 }
               }
             ]
@@ -242,6 +242,7 @@
   },
   "active": "60b1fb67c95529b4",
   "lastOpenFiles": [
+    "pull.bat",
     "test.md",
     "Untitled.canvas",
     "memory.md",
@@ -281,7 +282,6 @@
     "Strategies/Volume Profile Throwback.md",
     "Reflections/Volume Profile - Key Insights.md",
     "Concepts/Head Fakes (Retail Traps).md",
-    "Concepts/HVN vs LVN Actionability.md",
     "Untitled 4.canvas",
     "Untitled 3.canvas",
     "Untitled 2.canvas",
