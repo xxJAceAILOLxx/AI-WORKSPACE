@@ -60,8 +60,59 @@
       },
       "notes": "ibs_dynamic: IBS<0.20 + SMA200, dynamic exits (profit take at prior high, 2x ATR trailing stop, 5-day max hold). Lower CAGR 3.44% than plain ibs_spy because dynamic exits cut winners short. Better DD (11.6% vs 21%).",
       "linked_at": "2026-07-04T05:40:05.170969+00:00"
+    },
+    {
+      "run_dir": "backtest/runs/ibs_spy_2016_2025",
+      "metrics": {
+        "final_equity": 230888.7,
+        "total_return": 1.3089,
+        "cagr": 0.0876,
+        "max_drawdown": 0.2103,
+        "sharpe": 0.7035,
+        "sortino": 0.6536,
+        "win_rate": 0.6435,
+        "profit_factor": 1.6585,
+        "expectancy": 643.64,
+        "trade_count": 230
+      },
+      "notes": "ibs_spy baseline re-run confirmed: IBS<0.20, 5-day hold, next_open, 95% equity. CAGR 8.76%, Sharpe 0.70, max DD 21.0%. 230 trades, 64.3% win rate. Best Sharpe among all IBS variants tested.",
+      "linked_at": "2026-07-04T05:42:10.008234+00:00"
+    },
+    {
+      "run_dir": "backtest/runs/ibs_dynamic_2016_2025",
+      "metrics": {
+        "final_equity": 140104.48,
+        "total_return": 0.401,
+        "cagr": 0.0344,
+        "max_drawdown": 0.1158,
+        "sharpe": 0.5268,
+        "sortino": 0.3869,
+        "win_rate": 0.6808,
+        "profit_factor": 1.5625,
+        "expectancy": 244.62,
+        "trade_count": 213
+      },
+      "notes": "ibs_dynamic re-run confirmed: IBS<0.20 + SMA200, dynamic exits (profit take at prior high, 2x ATR trailing stop, 5-day max hold). CAGR 3.44%, Sharpe 0.53. Dynamic exits reduce avg hold to 2.84 days but cut winners short — expectancy drops from $643 to $244.",
+      "linked_at": "2026-07-04T05:42:10.009442+00:00"
+    },
+    {
+      "run_dir": "backtest/runs/ibs_trend_2016_2025",
+      "metrics": {
+        "final_equity": 119342.4,
+        "total_return": 0.1934,
+        "cagr": 0.0179,
+        "max_drawdown": 0.0738,
+        "sharpe": 0.5946,
+        "sortino": 0.1745,
+        "win_rate": 0.7083,
+        "profit_factor": 2.9186,
+        "expectancy": 856.62,
+        "trade_count": 24
+      },
+      "notes": "ibs_trend re-run confirmed: IBS<0.20 + SMA200 + TurnOfMonth. Only 24 trades — very sparse. Win rate 70.8% and PF 2.92 are best quality but CAGR only 1.79% due to low frequency. Best for risk-averse, low-frequency style.",
+      "linked_at": "2026-07-04T05:42:10.010609+00:00"
     }
   ],
   "created_at": "2026-07-04T05:39:44.230701+00:00",
-  "updated_at": "2026-07-04T05:40:05.170980+00:00"
+  "updated_at": "2026-07-04T05:42:10.010621+00:00"
 }

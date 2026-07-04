@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 # Defaults for OpenCode Zen.
 _DEFAULT_BASE_URL = "https://opencode.ai/zen/v1"
-_DEFAULT_MODEL = "gpt-5.3-codex"
+_DEFAULT_MODEL = "deepseek-v4-flash-free"
 _DEFAULT_TEMPERATURE = 0.0
 
 

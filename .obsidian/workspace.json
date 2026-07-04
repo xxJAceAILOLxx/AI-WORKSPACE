@@ -242,6 +242,7 @@
   },
   "active": "b629032f8d7edec8",
   "lastOpenFiles": [
+    "orchestrator/goal/store/73d0d045458d.json",
     "orchestrator/goal/store/fb2a85a333db.json",
     "orchestrator/goal/store",
     "orchestrator/hypotheses/store/43345b4b5408.json",
@@ -252,7 +253,6 @@
     "backtest/strategies/__pycache__/vix_etn.cpython-314.pyc",
     "backtest/strategies/__pycache__/turn_of_month.cpython-314.pyc",
     "backtest/strategies/__pycache__/rsi2_qqq_enhanced.cpython-314.pyc",
-    "backtest/strategies/__pycache__/rsi2.cpython-314.pyc",
     "Strategies/Funded 80% Pass Strategy.md",
     "Concepts/Markov Property.md",
     "Strategies/Hedge Fund Markov Method.md",

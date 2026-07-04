@@ -1,0 +1,20 @@
+{
+  "goal_id": "73d0d045458d",
+  "session_id": "",
+  "objective": "Research and validate IBS (Internal Bar Strength) mean reversion on SPY — identify optimal entry threshold, holding period, trend/sizing filters, and compare all strategy variants to determine the best risk-adjusted approach.",
+  "criteria": [
+    "Identify the IBS formula, interpretation, and how mean reversion edge works",
+    "Run and compare all existing IBS strategy variants (ibs_spy, ibs_trend, ibs_dynamic, volume_scaled_ibs)",
+    "Compare IBS performance against other mean reversion strategies (RSI2, %B, down streak, ToM)",
+    "Test on QQQ to check cross-asset robustness",
+    "Evaluate the mr_portfolio which combines IBS with other signals",
+    "Determine optimal IBS threshold and holding period",
+    "Assess drawdown, Sharpe, win rate trade-offs across variants",
+    "Record final verdict: which IBS approach is best for which trading style"
+  ],
+  "evidence": [],
+  "status": "active",
+  "source": "manual",
+  "created_at": "2026-07-04T05:42:15.130881+00:00",
+  "updated_at": "2026-07-04T05:42:15.130893+00:00"
+}
