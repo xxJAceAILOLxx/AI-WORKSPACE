@@ -35,9 +35,12 @@ def test_hypothesis_create_and_get(tmp_path):
 
 def test_hypothesis_list_and_filter(tmp_path):
     reg = HypothesisRegistry(store_dir=tmp_path)
-    reg.create_hypothesis(title="A", status="draft")
-    reg.create_hypothesis(title="B", status="active")
-    reg.create_hypothesis(title="C", status="draft")
+    h1 = reg.create_hypothesis(title="A")
+    h2 = reg.create_hypothesis(title="B")
+    h3 = reg.create_hypothesis(title="C")
+    reg.update_hypothesis(h1.hypothesis_id, status="draft")
+    reg.update_hypothesis(h2.hypothesis_id, status="active")
+    reg.update_hypothesis(h3.hypothesis_id, status="draft")
 
     all_h = reg.list_hypotheses()
     assert len(all_h) == 3
