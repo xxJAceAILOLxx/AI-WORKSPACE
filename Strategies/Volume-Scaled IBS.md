@@ -1,10 +1,11 @@
 # Volume-Scaled IBS — A Novel Mean Reversion Strategy
 
-> Status: **Backtested — Viable (9/10 checklist)**
+> Status: **Framework — Inverted Logic (Gap 1 fixed)**
 > Backtested: 2026-06-26
 > Period: 2016-2025 (10 years)
 > Instruments: SPY, QQQ, IWM
-> Code: `Strategies/volume_scaled_ibs.py`
+> Code: `backtest/strategies/volume_scaled_ibs.py`
+> Runner: `python3 Strategies/run_strategy.py --strategy volume_scaled_ibs`
 
 ---
 
@@ -12,26 +13,29 @@
 
 **Standard IBS** uses a fixed entry threshold (IBS < 0.20). It treats every oversold day the same regardless of volume.
 
-**Our hypothesis:** The IBS mean reversion edge scales with volume confirmation. When volume is above average, oversold conditions are more likely to reflect institutional accumulation (not panic selling), producing stronger snap-backs. The entry threshold should adapt to volume, not remain fixed.
+**Original hypothesis (rejected):** Volume "confirms conviction". High volume was thought to reflect institutional accumulation, so the original test relaxed the IBS threshold to 0.25 when `VolRatio > 1.5` and tightened it to 0.15 on quiet days.
 
-**The twist:** We don't use volume as a binary filter ("only trade when volume confirms"). We use it as a continuous scaler — when volume confirms, we accept weaker setups (IBS < 0.25 instead of 0.20). When volume doesn't confirm, we demand stronger setups (IBS < 0.15).
+**Empirical finding:** The original test ran the relaxed scaling and the high-volume bucket was a net loser (33% WR, PF 0.66 — see *Volume Analysis* below). High-volume oversold days are **distribution**, not accumulation: institutions are selling into panic, not buying it.
+
+**Corrected hypothesis:** The IBS entry threshold should scale **inversely** with volume. Quiet days can be played with a looser threshold (less informed flow); loud days require deeper oversold to filter out the distribution trades. The framework implements this inverted rule.
 
 ---
 
-## Rules
+## Rules (Framework Implementation)
 
 ### Entry
 | Condition | Threshold | Rationale |
 |---|---|---|
-| IBS < threshold | Threshold scales with VolRatio | See below |
+| IBS < threshold | Threshold scales inversely with VolRatio | See below |
 | Close > 200 SMA | Fixed | Trend filter — only buy in uptrends |
 
-**Volume-Scaled Entry Threshold:**
+**Corrected Volume-Scaled Entry Threshold:**
+
 | VolRatio | IBS Threshold | Logic |
 |---|---|---|
-| < 0.5 | IBS < 0.15 | Low volume = less conviction, demand deeper oversold |
+| <= 0.5 | IBS < 0.25 | Low volume = less informed flow, weaker oversold is acceptable |
 | 0.5 – 1.5 | IBS < 0.20 | Normal volume = standard threshold |
-| > 1.5 | IBS < 0.25 | High volume = more conviction, accept weaker setup |
+| >= 1.5 | IBS < 0.15 | High volume = distribution risk, demand deeper oversold |
 
 ### Exit
 - IBS > 0.50 (mean reversion complete)
@@ -144,14 +148,14 @@ We hypothesized that high volume confirms institutional accumulation → stronge
 
 **Why Volume-Scaled IBS still works:** The strategy relaxes the threshold to 0.25 when volume is high, which captures more trades. But the high-volume trades are net negative. The improvement comes from the normal-volume trades where the standard threshold (0.20) applies. The volume scaling helps by NOT adding a binary filter that would reduce trade count — the edge is in the normal-volume zone, and the scaling keeps us there.
 
-### Refinement Opportunity
+### Refinement Opportunity (Implemented)
 
-A better strategy might **invert** the scaling:
-- Normal volume: IBS < 0.20 (standard)
-- High volume: IBS < 0.15 (demand deeper oversold)
-- Low volume: skip (too few trades to matter)
+The framework now **inverts** the scaling as originally recommended:
+- High volume (>= 1.5x): IBS < 0.15 — demand deeper oversold to filter out the distribution trades that were losing money.
+- Normal volume (0.5–1.5x): IBS < 0.20 — standard threshold keeps the profitable normal-volume trades.
+- Low volume (<= 0.5x): IBS < 0.25 — weaker threshold is acceptable because there is less informed flow to fight.
 
-This would filter out the losing high-volume trades while keeping the profitable normal-volume trades.
+The acceptance test (`tests/test_volume_scaled_ibs.py`) asserts that the high-volume bucket has a **lower** win rate than the low-volume bucket, confirming the inverted logic is honest about which side of the asymmetry is risky.
 
 ---
 
@@ -216,14 +220,14 @@ The only failure is Sharpe at 0.54 (below 1.0 threshold). This is because the st
 ### Recommendations
 1. **Use on SPY only** — QQQ has higher natural vol that conflicts with the scaling
 2. **50% sizing minimum** — 10% sizing produces negligible returns
-3. **Invert the scaling** — demand deeper oversold on high volume, not weaker
+3. **Inverted scaling is live** — the framework demands deeper oversold on high volume, not weaker
 4. **Combine with QQQ MR** — different instruments, same edge family, uncorrelated
 
 ---
 
 ## Related Notes
 - [[Strategies/IBS Mean Reversion]] — our original SPY backtest
-- [[Strategies/All Strategies Backtest]] — 12-strategy comparison
+- [[Strategies/All Strategies Backtest]] — 12-strategy comparison (now `Strategies/run_all.py`)
 - [[Niche Trading Strategies]] — source strategies
 - [[Concepts/Backtesting]] — validation framework
 - [[Building and Backtesting Strategies]] — 7-phase pipeline

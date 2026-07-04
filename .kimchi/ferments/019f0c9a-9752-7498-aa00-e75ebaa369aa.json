@@ -1,0 +1,17 @@
+{
+  "id": "019f0c9a-9752-7498-aa00-e75ebaa369aa",
+  "name": "/model",
+  "description": "/model",
+  "status": "draft",
+  "worktree": {
+    "path": "/mnt/c/Users/Admin/Documents/AI",
+    "branch": "main",
+    "commit": "79303389e5e47a59457bf3ae89330946fcd80a1b"
+  },
+  "scoping": {},
+  "phases": [],
+  "decisions": [],
+  "memories": [],
+  "createdAt": "2026-06-28T05:01:25.714Z",
+  "updatedAt": "2026-06-28T05:01:25.714Z"
+}

@@ -31,9 +31,11 @@ You are a quantitative strategist. Given a market edge or observation:
 **Purpose:** Run backtests, validate results, and stress-test strategies.
 
 **Responsibilities:**
-- Execute backtests using `all_strategies_backtest.py` and variants
+- Execute backtests via the unified framework: `python3 Strategies/run_strategy.py --strategy <name>` for a single strategy, or `python3 Strategies/run_all.py` to rank every registered strategy.
+- Strategies live in `backtest/strategies/` and self-register via `@register("name")`; use `backtest.strategies.registry.run` from Python or `Strategies/run_strategy.py --list` to enumerate them.
 - Run walk-forward validation, Monte Carlo, regime analysis
 - Detect overfitting via Deflated Sharpe Ratio
+- Default execution is **next-open**; pass `--execution close` only when you specifically want same-bar fills.
 - Generate performance reports with honest assessments
 - Reference: [[All Strategies Backtest]], [[QQQ Dual-Signal Edge]]
 
@@ -57,7 +59,7 @@ You are a rigorous backtester. When given a strategy:
 - Enforce max drawdown, daily loss limits, correlation limits
 - Manage prop firm challenge constraints (10% target, 10% DD, 5% daily)
 - Calculate Kelly criterion or half-Kelly sizing
-- Reference: [[Funded Account Edge]], [[Building and Backtesting Strategies]]
+- Reference: [[Funded 80% Pass Strategy]], [[Building and Backtesting Strategies]]
 
 **Prompt Template:**
 ```
@@ -216,7 +218,7 @@ You are a quantitative researcher. Find new trading edges:
 - Calculate optimal position sizing for challenge phase
 - Monitor progress toward profit target
 - Advise on scaling after passing challenge
-- Reference: [[Funded Account Edge]], [[Funded Account Edge 2]], [[Funded Account Edge 3]]
+- Reference: [[Funded 80% Pass Strategy]]
 
 **Prompt Template:**
 ```
@@ -281,6 +283,11 @@ Advise on:
 
 ## Agent Orchestration
 
+The seven workflow stages are runnable end-to-end via the
+`orchestrator/` package. The CLI populates each agent's prompt with
+the current context and, where applicable, invokes the local backtest
+runner. It does **not** call any external LLM API.
+
 ### Workflow Stages
 
 ```
@@ -300,6 +307,39 @@ Agents can call each other:
 - **Backtest Engine** → asks **Risk Manager** to validate position sizing
 - **Mistake Tracker** → feeds insights to **Strategy Architect** for improvements
 - **Web Researcher** → hands findings to **Knowledge Curator** for vault integration
+
+### Running the Workflow
+
+Run every stage end-to-end against an idea (the orchestrator auto-detects
+a strategy name in the idea and runs the backtest):
+
+```bash
+python3 -m orchestrator.cli --workflow full --idea "IBS mean reversion using ibs_spy"
+```
+
+List every agent:
+
+```bash
+python3 -m orchestrator.cli --list
+```
+
+Run a single agent's prompt and, if its stage is `backtest`, execute it:
+
+```bash
+python3 -m orchestrator.cli --agent backtest_engine --strategy ibs_spy
+```
+
+Rank every registered strategy:
+
+```bash
+python3 Strategies/run_all.py
+```
+
+Run a single strategy by name:
+
+```bash
+python3 Strategies/run_strategy.py --strategy ibs_spy
+```
 
 ---
 
@@ -341,6 +381,13 @@ Current NQ 5m profile shows:
 Analyze and suggest setups.
 ```
 
+Or invoke the orchestration layer programmatically; the CLI handles
+prompt population and backtest execution:
+
+```bash
+python3 -m orchestrator.cli --workflow full --idea "NQ mean reversion using ibs_spy"
+```
+
 ---
 
-*Last updated: 2026-06-26*
+*Last updated: 2026-06-28*

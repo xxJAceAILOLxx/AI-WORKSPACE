@@ -5,7 +5,12 @@
 > Period: 2016-01-01 to 2025-12-31 (10 years)
 > Instruments: SPY, QQQ, IWM, VXX, SVXY, VIX
 > Costs: 0.1% round trip (ETFs), $40 round trip (VIX ETN)
-> Code: `Strategies/all_strategies_backtest.py`
+> Code: `Strategies/run_all.py`
+>
+> The legacy `all_strategies_backtest.py` script has been archived at
+> `archive/Strategies/all_strategies_backtest.py` and is no longer
+> maintained. The current ranking is produced by `Strategies/run_all.py`,
+> which iterates over the framework registry in `backtest/strategies/`.
 
 ---
 
