@@ -1,0 +1,16 @@
+{
+  "goal_id": "fb2a85a333db",
+  "session_id": "default",
+  "objective": "Validate hypothesis 'IBS Mean Reversion on SPY - Comprehensive Research': The Internal Bar Strength (IBS) indicator measures where the close sits within the day's range: IBS = (Close - Low) / (High - Low). Values near 0 indicate the close is near the low (intraday selling p\nUniverse: SPY\nSignal: Entry: IBS = (Close - Low) / (High - Low) < threshold (typically 0.20), possibly with Close > SMA200 trend filter.\nExit: 5-day time-based hold, or dynamic exits (profit take at prior day's high, trail",
+  "criteria": [
+    "Backtest produces non-empty trades",
+    "Sharpe ratio > 0.5",
+    "Max drawdown < 20%",
+    "Win rate > 40%"
+  ],
+  "evidence": [],
+  "status": "active",
+  "source": "autopilot",
+  "created_at": "2026-07-04T05:39:58.001839+00:00",
+  "updated_at": "2026-07-04T05:39:58.001856+00:00"
+}

@@ -1,0 +1,67 @@
+{
+  "hypothesis_id": "43345b4b5408",
+  "title": "IBS Mean Reversion on SPY - Comprehensive Research",
+  "thesis": "The Internal Bar Strength (IBS) indicator measures where the close sits within the day's range: IBS = (Close - Low) / (High - Low). Values near 0 indicate the close is near the low (intraday selling pressure/weakness), and values near 1 indicate the close is near the high (buying pressure/strength). \n\nThe mean reversion thesis: When SPY has an extreme closing IBS (IBS < 0.20), it signals short-term selling exhaustion/capitulation. Over the next 5 trading days, the market tends to mean revert upwards as the initial selling pressure dissipates. This is especially effective when combined with a longer-term uptrend filter (Close > SMA200).\n\nThe vault already implements several IBS variants: plain ibs_spy (IBS<0.20, 5-day hold), ibs_trend (IBS<0.20 + SMA200 + ToM), ibs_dynamic (dynamic exits with ATR stop/profit take), and volume_scaled_ibs (volume-adjusted thresholds with 0.15/0.20/0.25).",
+  "universe": "SPY",
+  "signal_definition": "Entry: IBS = (Close - Low) / (High - Low) < threshold (typically 0.20), possibly with Close > SMA200 trend filter.\nExit: 5-day time-based hold, or dynamic exits (profit take at prior day's high, trailing ATR stop, or max hold).\nSizing: 95% of equity per trade (percent_of_equity) or fixed-risk 10% of capital (volume_scaled_ibs).\nExecution: next_open (default) to avoid lookahead bias.",
+  "data_sources": [
+    "yfinance",
+    "vault backtest data"
+  ],
+  "status": "draft",
+  "run_cards": [
+    {
+      "run_dir": "backtest/runs/ibs_spy_2016_2025",
+      "metrics": {
+        "final_equity": 230888.7,
+        "total_return": 1.3089,
+        "cagr": 0.0876,
+        "max_drawdown": 0.2103,
+        "sharpe": 0.7035,
+        "sortino": 0.6536,
+        "win_rate": 0.6435,
+        "profit_factor": 1.6585,
+        "expectancy": 643.64,
+        "trade_count": 230
+      },
+      "notes": "ibs_spy baseline: IBS<0.20, 5-day hold, next_open, 95% equity. 10-year backtest 2016-2025. CAGR 8.76%, Sharpe 0.70, max DD 21%. 230 trades, 64.3% win rate.",
+      "linked_at": "2026-07-04T05:40:05.168986+00:00"
+    },
+    {
+      "run_dir": "backtest/runs/ibs_trend_2016_2025",
+      "metrics": {
+        "final_equity": 119342.4,
+        "total_return": 0.1934,
+        "cagr": 0.0179,
+        "max_drawdown": 0.0738,
+        "sharpe": 0.5946,
+        "sortino": 0.1745,
+        "win_rate": 0.7083,
+        "profit_factor": 2.9186,
+        "expectancy": 856.62,
+        "trade_count": 24
+      },
+      "notes": "ibs_trend: IBS<0.20 + Close>SMA200 + TurnOfMonth. Only 24 trades in 10 years (very sparse). High win rate 70.8% and PF 2.92, but CAGR only 1.79% due to low signal frequency.",
+      "linked_at": "2026-07-04T05:40:05.170084+00:00"
+    },
+    {
+      "run_dir": "backtest/runs/ibs_dynamic_2016_2025",
+      "metrics": {
+        "final_equity": 140104.48,
+        "total_return": 0.401,
+        "cagr": 0.0344,
+        "max_drawdown": 0.1158,
+        "sharpe": 0.5268,
+        "sortino": 0.3869,
+        "win_rate": 0.6808,
+        "profit_factor": 1.5625,
+        "expectancy": 244.62,
+        "trade_count": 213
+      },
+      "notes": "ibs_dynamic: IBS<0.20 + SMA200, dynamic exits (profit take at prior high, 2x ATR trailing stop, 5-day max hold). Lower CAGR 3.44% than plain ibs_spy because dynamic exits cut winners short. Better DD (11.6% vs 21%).",
+      "linked_at": "2026-07-04T05:40:05.170969+00:00"
+    }
+  ],
+  "created_at": "2026-07-04T05:39:44.230701+00:00",
+  "updated_at": "2026-07-04T05:40:05.170980+00:00"
+}
