@@ -67,7 +67,7 @@
                   },
                   "pinned": true,
                   "icon": "terminal",
-                  "title": "Terminal: OC | Vibe Trading workflow implementation"
+                  "title": "Terminal: Administrator: Windows PowerShell"
                 }
               }
             ]
@@ -240,7 +240,7 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "60b1fb67c95529b4",
+  "active": "b629032f8d7edec8",
   "lastOpenFiles": [
     "Strategies/Funded 80% Pass Strategy.md",
     "Strategies/funded_80_pass.py",
