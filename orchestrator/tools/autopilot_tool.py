@@ -288,7 +288,7 @@ class LinkAutopilotBacktestTool(BaseTool):
                                     metrics[k] = float(v)
                                 except (ValueError, TypeError):
                                     pass
-                    break  # only read first row
+                            break  # only read first row
                 except Exception:
                     pass
 

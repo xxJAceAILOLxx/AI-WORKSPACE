@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from .registry import AlphaRegistry, list_alphas, register_alpha
+from .registry import list_alphas, register_alpha
 
-__all__ = ["AlphaRegistry", "list_alphas", "register_alpha"]
+__all__ = ["list_alphas", "register_alpha"]

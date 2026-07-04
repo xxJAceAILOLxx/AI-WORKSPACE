@@ -4,14 +4,24 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-trading-vault"
-version = "0.1.0"
-description = "Unified backtest framework and agent orchestration for the trading vault."
+version = "0.2.0"
+description = "Unified backtest framework, agent orchestration, and LLM-driven trading research for the vault."
 requires-python = ">=3.10"
 dependencies = [
     "pandas",
     "numpy",
     "yfinance",
+    "openai>=1.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "requests",
 ]
+
+[project.optional-dependencies]
+web = ["ddgs>=6.0"]
+ashare = ["akshare>=1.12", "tushare>=1.2.89"]
+full = ["akshare>=1.12", "tushare>=1.2.89", "ddgs>=6.0"]
+dev = ["pytest", "pytest-cov"]
 
 [tool.setuptools.packages.find]
 where = ["."]
