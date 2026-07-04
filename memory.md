@@ -1,12 +1,15 @@
 # Memory
 
 ## Last Updated
+
 2026-07-02
 
 ## 1. What this vault is
+
 A unified backtest framework + agent orchestration layer for a personal Obsidian trading-research vault, replacing scattered `Strategies/*.py` one-offs.
 
 ## Maintenance rule
+
 Whenever a strategy is added, removed, or modified; a new backtest result is produced; an agent/workflow stage changes; or a design decision/critical gotcha is updated, this file must be updated. The framework auto-rewrites some sections on opt-in (`--update-memory`, workflow `new_strategy` flag); everything else is a manual edit.
 
 **Checklist by change type:**
@@ -21,6 +24,7 @@ Whenever a strategy is added, removed, or modified; a new backtest result is pro
 After any non-trivial change, run `python3 -m pytest tests/ -q` to confirm the test suite still passes.
 
 ## 2. Quick start
+
 ```bash
 # Run every registered strategy (ranked)
 python3 Strategies/run_all.py
@@ -36,6 +40,7 @@ python3 -m pytest tests/ -q
 ```
 
 ## 3. Directory map
+
 | Path | Purpose |
 |---|---|
 | `backtest/` | Reusable engine, indicators, costs, metrics, validation, reporting, strategies |
@@ -48,6 +53,7 @@ python3 -m pytest tests/ -q
 | `Concepts/`, `Reflections/`, `Strategies/*.md` | Obsidian vault notes (untouched by refactor) |
 
 ## 4. Framework API (one-liners)
+
 | Class/Function | Location | Purpose |
 |---|---|---|
 | `Engine` | `backtest/engine.py` | Event-loop backtest engine; default `execution="next_open"` |
@@ -62,6 +68,7 @@ python3 -m pytest tests/ -q
 | `Agent`, `AGENTS`, `get_agent`, `list_agents`, `by_stage`, `primary_agent` | `orchestrator/agents.py` | Agent definitions |
 
 ## 5. Registered strategies
+
 | Name | Ticker | Entry | Exit | Sizing | Cost |
 |---|---|---|---|---|---|
 | `ibs_spy` | SPY | `IBS < 0.20` | 5-day hold | 95% equity | `etf_0.1pct` |
@@ -83,6 +90,7 @@ python3 -m pytest tests/ -q
 Run `python3 Strategies/run_strategy.py --list` for the live registry.
 
 ## 6. Agent system
+
 Pipeline: `research -> design -> backtest -> validate -> deploy -> monitor -> learn`.
 
 | Stage | Primary Agent | What it does |
@@ -98,6 +106,7 @@ Pipeline: `research -> design -> backtest -> validate -> deploy -> monitor -> le
 Additional agents (not in default workflow): `market_regime_detector`, `structure_analyst`, `order_flow_interpreter`, `neural_network_architect`, `portfolio_optimizer`. No external LLM calls — orchestrator prints populated prompts and invokes the local backtest runner.
 
 ## 7. Key design decisions
+
 - **Next-open default execution.** `execution="next_open"` in `Engine`; close execution must be requested explicitly (`--execution close`).
 - **Inverted volume-scaled IBS.** `vol_ratio >= 1.5` -> `IBS<0.15` (deep oversold required on high volume, since institutions distribute); `vol_ratio <= 0.5` -> `IBS<0.25` (relaxed on quiet volume); otherwise `IBS<0.20`.
 - **Unified cost registry.** Strategies pull from `backtest.costs` (`PERCENT_10BP`/`etf_0.1pct`, `FLAT_40`/`vix_etn_40`, `PER_SHARE_1C`/`per_share_0.01`); no magic numbers in strategy code.
@@ -106,6 +115,7 @@ Additional agents (not in default workflow): `market_regime_detector`, `structur
 - **Vault left intact.** Only Python reorganised; all `.md` notes remain.
 
 ## 8. Critical gotchas
+
 - **Yahoo forex is interpolated** mid-prices, not real ticks — smooths series and creates fake mean-reversion edges.
 - **Same-bar entry/exit = lookahead bias.** Always execute at the next bar's open.
 - **IBS<0.18 on GBPUSD:** Sharpe 3.80 at close -> Sharpe -7.81 (WR 2%) at next open. If an edge disappears at next-open, it was a data artifact.
@@ -152,7 +162,10 @@ Additional agents (not in default workflow): `market_regime_detector`, `structur
 - `orb_15m_crypto(ETHUSDT)`: not started.
 - **Honest limitation:** engine is long-only, so fade_5bar_crypto only captures the *downside* of the Alpha Atlas edge (buys new 5-bar lows, expects bounce). The original Atlas edge also shorts new 5-bar highs. A proper short leg needs engine-level shorting support.
 
+- **2026-07-04T05:50:36Z** - `ibs_spy`: PF 1.66, Sharpe 0.70, CAGR 8.76%, DD 21.03%, WR 64.35%, 230 trades. Verdict: validate FAILED.
+
 ## 10. Open questions / TODOs
+
 - How to systematically measure "freshness" of positioning?
 - When does a level transition from actionable positioning to context-only?
 - How to quantify absorption strength (volume decay at a level)?
@@ -164,6 +177,7 @@ Additional agents (not in default workflow): `market_regime_detector`, `structur
 - Investigate why framework run on `ibs_spy` shows DD 21% vs backtest snapshot ~16% — cost/window difference?
 
 ## 11. Vault sync
+
 - **Primary remote:** GitLab -> https://gitlab.com/aitrading69/REDACTED.git
 - **Secondary remote:** GitHub -> https://github.com/xxJAceAILOLxx/AI-WORKSPACE.git
 - **Plugin:** obsidian-git (auto-commit, auto-push, auto-pull)
@@ -171,6 +185,7 @@ Additional agents (not in default workflow): `market_regime_detector`, `structur
 - **Auto-pull on boot:** enabled
 
 ## 12. Key quotes
+
 - > "Markets are just positions." — Michael Platt
 - > "Volume profile's not a magic map of support and resistance."
 - > "The shorter and cleaner it is, the more you could tell about live positioning."
@@ -180,3 +195,23 @@ Additional agents (not in default workflow): `market_regime_detector`, `structur
 - > "If you torture the data long enough, it will confess to anything." — Ronald Coase
 - > "Simplicity is an advantage, not a limitation."
 - > "Only 1 out of every 20 strategy ideas survives a complete validation process." — Kevin Davey
+
+## Framework Runs
+
+- **2026-07-04T05:50:14Z** - idea: IBS mean reversion on SPY
+  - strategy: `-`
+  - stages: research, design, backtest, validate, deploy, monitor, learn
+  - notes: validate_ok=True; max_dd=0.00%; max_daily=0.00%
+- **2026-07-04T05:50:36Z** - idea: IBS mean reversion on SPY
+  - strategy: `ibs_spy`
+  - stages: research, design, backtest, validate, deploy, monitor, learn
+  - metrics:
+    {
+      "cagr": 0.0875669484698045,
+      "max_drawdown": 0.2103360230892758,
+      "profit_factor": 1.658540255877099,
+      "sharpe": 0.703454673682409,
+      "trade_count": 230.0,
+      "win_rate": 0.6434782608695652
+    }
+  - notes: validate_ok=False; max_dd=21.03%; max_daily=10.40%
