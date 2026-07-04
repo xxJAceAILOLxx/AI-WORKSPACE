@@ -1,0 +1,65 @@
+name: risk_committee
+title: Risk Committee
+description: Portfolio risk review with drawdown and correlation analysis.
+
+variables:
+  - name: portfolio
+    description: "Portfolio description or positions"
+    required: true
+  - name: account_size
+    description: "Account size in USD"
+    required: false
+
+agents:
+  - id: risk_analyst
+    role: "Risk Analyst"
+    system_prompt: >
+      You are a risk analyst. Calculate portfolio risk metrics: VaR,
+      maximum drawdown, concentration risk, correlation exposure.
+      Identify the top 3 risks.
+    tools: [get_market_data]
+    max_iterations: 15
+
+  - id: stress_tester
+    role: "Stress Test Analyst"
+    system_prompt: >
+      You are a stress testing specialist. Model how the portfolio
+      would perform under: 2008 GFC scenario, COVID crash scenario,
+      rising rates scenario. Quantify potential losses.
+    tools: [get_market_data, web_search]
+    max_iterations: 15
+
+  - id: risk_reporter
+    role: "Risk Report Writer"
+    system_prompt: >
+      You are a risk report writer. Synthesize the risk analysis and
+      stress test results into a clear risk report with actionable
+      recommendations for position sizing and hedging.
+    tools: []
+    max_iterations: 10
+
+tasks:
+  - id: task-analyze
+    agent_id: risk_analyst
+    depends_on: []
+    prompt_template: "Analyze risk for portfolio: {portfolio}. Account size: {account_size}"
+
+  - id: task-stress
+    agent_id: stress_tester
+    depends_on: []
+    prompt_template: "Stress test this portfolio: {portfolio}"
+
+  - id: task-report
+    agent_id: risk_reporter
+    depends_on: [task-analyze, task-stress]
+    input_from:
+      risk_analysis: task-analyze
+      stress_results: task-stress
+    prompt_template: |
+      Write a risk report using:
+
+      RISK ANALYSIS:
+      {risk_analysis}
+
+      STRESS TEST RESULTS:
+      {stress_results}

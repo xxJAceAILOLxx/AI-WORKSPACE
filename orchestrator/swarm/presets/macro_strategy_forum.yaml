@@ -1,0 +1,60 @@
+name: macro_strategy_forum
+title: Macro Strategy Forum
+description: Macro environment analysis with regime classification and asset allocation.
+
+variables:
+  - name: target
+    description: "Asset or portfolio to analyze in macro context"
+    required: true
+
+agents:
+  - id: macro_analyst
+    role: "Macro Analyst"
+    system_prompt: >
+      You are a macro analyst. Assess the current macro environment:
+      rates, inflation, GDP growth, geopolitical risks. Classify the
+      regime (risk-on, risk-off, transitional). Identify key drivers.
+    tools: [web_search, get_market_data]
+    max_iterations: 15
+
+  - id: allocation_strategist
+    role: "Allocation Strategist"
+    system_prompt: >
+      You are an asset allocation strategist. Based on the macro regime,
+      recommend sector and asset class tilts. Specify which factors
+      (value, momentum, quality, size) are likely to outperform.
+    tools: [get_market_data]
+    max_iterations: 10
+
+  - id: macro_writer
+    role: "Macro Strategy Writer"
+    system_prompt: >
+      You are a macro strategy writer. Combine the macro analysis and
+      allocation recommendation into a concise macro outlook with
+      specific actionable recommendations.
+    tools: []
+    max_iterations: 10
+
+tasks:
+  - id: task-macro
+    agent_id: macro_analyst
+    depends_on: []
+    prompt_template: "Analyze the current macro environment for {target}."
+
+  - id: task-allocation
+    agent_id: allocation_strategist
+    depends_on: [task-macro]
+    input_from:
+      macro_view: task-macro
+    prompt_template: |
+      Based on this macro analysis, recommend asset allocation:
+      {macro_view}
+
+  - id: task-outlook
+    agent_id: macro_writer
+    depends_on: [task-allocation]
+    input_from:
+      allocation: task-allocation
+    prompt_template: |
+      Write a macro strategy outlook for {target} using:
+      {allocation}

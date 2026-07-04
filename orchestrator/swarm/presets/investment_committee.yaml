@@ -1,0 +1,87 @@
+name: investment_committee
+title: Investment Committee
+description: Bull vs bear debate with risk review and portfolio decision.
+
+variables:
+  - name: target
+    description: "Security or portfolio to evaluate"
+    required: true
+  - name: market
+    description: "Market context or regime"
+    required: false
+
+agents:
+  - id: bull_advocate
+    role: "Bull Case Advocate"
+    system_prompt: >
+      You are a bullish analyst. Build the strongest possible bull case
+      for the given security. Use data, technicals, and fundamentals.
+      Be specific with numbers and timeframes.
+    tools: [get_market_data, web_search, run_backtest]
+    max_iterations: 15
+
+  - id: bear_advocate
+    role: "Bear Case Advocate"
+    system_prompt: >
+      You are a bearish analyst. Build the strongest possible bear case
+      for the given security. Focus on risks, overvaluation, and
+      downside scenarios. Be specific with numbers.
+    tools: [get_market_data, web_search, run_backtest]
+    max_iterations: 15
+
+  - id: risk_officer
+    role: "Risk Officer"
+    system_prompt: >
+      You are a risk officer. Review the bull and bear cases, identify
+      key risks, position sizing limits, and stop-loss levels.
+      Provide a risk-adjusted recommendation.
+    tools: [get_market_data]
+    max_iterations: 10
+
+  - id: portfolio_manager
+    role: "Portfolio Manager"
+    system_prompt: >
+      You are the portfolio manager making the final decision.
+      Weigh the bull case, bear case, and risk assessment.
+      Decide: BUY, SELL, or HOLD. Specify position size and timeframe.
+    tools: []
+    max_iterations: 10
+
+tasks:
+  - id: task-bull
+    agent_id: bull_advocate
+    depends_on: []
+    prompt_template: "Build the bull case for {target}. Market context: {market}"
+
+  - id: task-bear
+    agent_id: bear_advocate
+    depends_on: []
+    prompt_template: "Build the bear case for {target}. Market context: {market}"
+
+  - id: task-risk
+    agent_id: risk_officer
+    depends_on: [task-bull, task-bear]
+    input_from:
+      bull_report: task-bull
+      bear_report: task-bear
+    prompt_template: |
+      Review these opposing cases:
+
+      BULL CASE:
+      {bull_report}
+
+      BEAR CASE:
+      {bear_report}
+
+      Provide risk assessment and position sizing recommendation.
+
+  - id: task-decision
+    agent_id: portfolio_manager
+    depends_on: [task-risk]
+    input_from:
+      full_analysis: task-risk
+    prompt_template: |
+      Based on the full analysis:
+      {full_analysis}
+
+      Make your final decision: BUY, SELL, or HOLD. Include position size and timeframe.

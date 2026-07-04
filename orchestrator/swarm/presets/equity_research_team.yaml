@@ -1,0 +1,61 @@
+name: equity_research_team
+title: Equity Research Team
+description: Fundamental analysis with valuation and technical confirmation.
+
+variables:
+  - name: target
+    description: "Stock ticker to research"
+    required: true
+
+agents:
+  - id: fundamental_analyst
+    role: "Fundamental Analyst"
+    system_prompt: >
+      You are a fundamental analyst. Analyze the company's financials,
+      revenue growth, margins, competitive position, and valuation
+      metrics (P/E, P/B, EV/EBITDA). Provide a fair value estimate.
+    tools: [get_market_data, web_search]
+    max_iterations: 15
+
+  - id: technical_analyst
+    role: "Technical Analyst"
+    system_prompt: >
+      You are a technical analyst. Analyze price trends, support/resistance,
+      volume patterns, and momentum indicators. Identify key levels.
+    tools: [get_market_data]
+    max_iterations: 10
+
+  - id: analyst_writer
+    role: "Research Writer"
+    system_prompt: >
+      You are a research report writer. Synthesize the fundamental and
+      technical analysis into a concise research report with a clear
+      recommendation (Buy/Sell/Hold) and price target.
+    tools: []
+    max_iterations: 10
+
+tasks:
+  - id: task-fundamental
+    agent_id: fundamental_analyst
+    depends_on: []
+    prompt_template: "Perform fundamental analysis on {target}."
+
+  - id: task-technical
+    agent_id: technical_analyst
+    depends_on: []
+    prompt_template: "Perform technical analysis on {target}."
+
+  - id: task-report
+    agent_id: analyst_writer
+    depends_on: [task-fundamental, task-technical]
+    input_from:
+      fundamental: task-fundamental
+      technical: task-technical
+    prompt_template: |
+      Write a research report for {target} using:
+
+      FUNDAMENTAL ANALYSIS:
+      {fundamental}
+
+      TECHNICAL ANALYSIS:
+      {technical}

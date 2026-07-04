@@ -6,11 +6,17 @@ The workflow runs the stages documented in ``agents.md``::
 
 Each stage prints the prompt of the corresponding agent (with context
 substituted) and, where applicable, invokes the local backtest engine
-or sanity checks the equity curve.  No external LLM calls are made.
+or sanity checks the equity curve.
+
+When an ``llm`` is provided, non-backtest stages (research, design,
+deploy, monitor, learn) run through the LLM agent loop with tool
+execution instead of just printing prompts.  The backtest stage always
+uses the local registry.
 """
 
 from __future__ import annotations
 
+import logging
 import math
 from typing import Any, Callable, Dict, List, Optional
 
@@ -30,6 +36,8 @@ from .memory import (
     render_snapshot_bullet,
     render_strategy_table,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # Canonical stage ordering, mirrored by ``agents.ALL_STAGES``.
@@ -108,6 +116,15 @@ class Workflow:
         Default account size used by Risk Manager / Prop Firm prompts.
     max_dd_pct / daily_loss_pct / target_pct:
         Default prop firm rule percentages used in prompts.
+    llm:
+        Optional :class:`~orchestrator.providers.chat.ChatLLM` instance.
+        When provided, non-backtest stages run through the LLM agent
+        loop with tool execution.  When ``None`` (default), stages
+        print prompts only (backward-compatible behavior).
+    tool_registry:
+        Optional :class:`~orchestrator.agent.tools.ToolRegistry`.
+        When ``llm`` is provided but ``tool_registry`` is not, a
+        default registry is built via :func:`~orchestrator.agent.tools.build_registry`.
     """
 
     def __init__(
@@ -121,6 +138,8 @@ class Workflow:
         max_dd_pct: float = 10.0,
         daily_loss_pct: float = 5.0,
         target_pct: float = 10.0,
+        llm: Optional[Any] = None,
+        tool_registry: Optional[Any] = None,
     ) -> None:
         if stages is None:
             stages = list(STAGES)
@@ -139,6 +158,8 @@ class Workflow:
         self.max_dd_pct = float(max_dd_pct)
         self.daily_loss_pct = float(daily_loss_pct)
         self.target_pct = float(target_pct)
+        self._llm = llm
+        self._tool_registry = tool_registry
 
     # -- Helpers ----------------------------------------------------------
 
@@ -162,6 +183,44 @@ class Workflow:
         except (KeyError, ValueError) as exc:
             raise RuntimeError(f"No primary agent registered for stage {stage!r}") from exc
 
+    def _run_with_llm(self, stage: str, user_message: str) -> str:
+        """Run a stage through the LLM agent loop and return the text result.
+
+        Falls back to prompt-only mode if the LLM is not available.
+        """
+        if self._llm is None:
+            return ""
+
+        try:
+            from .agent.loop import AgentLoop
+            from .agent.prompt import build_system_prompt
+
+            agent = self._agent_for(stage)
+            registry = self._tool_registry
+            if registry is None:
+                from .agent.tools import build_registry
+                registry = build_registry()
+
+            system_prompt = build_system_prompt(registry)
+            # Prepend the agent's role-specific instructions.
+            full_prompt = (
+                f"You are {agent.name.replace('_', ' ').title()}. "
+                f"{agent.purpose}\n\n"
+                f"{system_prompt}"
+            )
+
+            loop = AgentLoop(
+                llm=self._llm,
+                registry=registry,
+                system_prompt=full_prompt,
+                max_iterations=15,
+            )
+            result = loop.run(user_message)
+            return result.content
+        except Exception as exc:
+            logger.exception("LLM agent loop failed for stage %s", stage)
+            return f"(LLM unavailable: {exc})"
+
     # -- Stage implementations -------------------------------------------
 
     def _stage_research(self, context: Dict[str, Any]) -> Dict[str, Any]:
@@ -169,7 +228,23 @@ class Workflow:
         idea = str(context.get("idea", ""))
         prompt = agent.format_prompt(idea=idea or "(no idea provided)")
         self._emit(f"research :: {agent.name}", prompt)
-        return {"agent": agent.name, "prompt": prompt, "idea": idea}
+
+        llm_response = ""
+        if self._llm is not None:
+            self.print_fn("  [research] running LLM agent with tools...")
+            llm_response = self._run_with_llm(
+                "research",
+                f"Research this trading idea: {idea}",
+            )
+            if llm_response:
+                self.print_fn(f"  [research] LLM response:\n{llm_response}")
+
+        return {
+            "agent": agent.name,
+            "prompt": prompt,
+            "idea": idea,
+            "llm_response": llm_response,
+        }
 
     def _stage_design(self, context: Dict[str, Any]) -> Dict[str, Any]:
         agent = self._agent_for("design")
@@ -180,10 +255,23 @@ class Workflow:
             strategy_name=strategy_name or "(unspecified)",
         )
         self._emit(f"design :: {agent.name}", prompt)
+
+        llm_response = ""
+        if self._llm is not None:
+            self.print_fn("  [design] running LLM agent with tools...")
+            llm_response = self._run_with_llm(
+                "design",
+                f"Design a trading strategy for this idea: {idea}. "
+                f"Strategy name hint: {strategy_name}",
+            )
+            if llm_response:
+                self.print_fn(f"  [design] LLM response:\n{llm_response}")
+
         return {
             "agent": agent.name,
             "prompt": prompt,
             "strategy_name": strategy_name,
+            "llm_response": llm_response,
         }
 
     def _stage_backtest(self, context: Dict[str, Any]) -> Dict[str, Any]:
@@ -366,7 +454,21 @@ class Workflow:
         )
         self._emit(f"deploy :: {agent.name}", prompt)
 
-        return {"agent": agent.name, "prompt": prompt, "phase": phase}
+        llm_response = ""
+        if self._llm is not None:
+            self.print_fn("  [deploy] running LLM agent with tools...")
+            llm_response = self._run_with_llm(
+                "deploy",
+                f"Prop firm challenge phase: {phase}. "
+                f"Account: ${self.account_size:,.0f}. "
+                f"Rules: target {self.target_pct}%, max DD {self.max_dd_pct}%, "
+                f"daily loss {self.daily_loss_pct}%.\n"
+                f"Metrics:\n{metrics_block}",
+            )
+            if llm_response:
+                self.print_fn(f"  [deploy] LLM response:\n{llm_response}")
+
+        return {"agent": agent.name, "prompt": prompt, "phase": phase, "llm_response": llm_response}
 
     def _stage_monitor(self, context: Dict[str, Any]) -> Dict[str, Any]:
         agent = self._agent_for("monitor")
@@ -396,7 +498,18 @@ class Workflow:
 
         prompt = agent.format_prompt(summary=summary)
         self._emit(f"monitor :: {agent.name}", prompt)
-        return {"agent": agent.name, "prompt": prompt, "summary": summary}
+
+        llm_response = ""
+        if self._llm is not None:
+            self.print_fn("  [monitor] running LLM agent with tools...")
+            llm_response = self._run_with_llm(
+                "monitor",
+                f"Review this trading run and identify mistakes:\n{summary}",
+            )
+            if llm_response:
+                self.print_fn(f"  [monitor] LLM response:\n{llm_response}")
+
+        return {"agent": agent.name, "prompt": prompt, "summary": summary, "llm_response": llm_response}
 
     def _stage_learn(self, context: Dict[str, Any]) -> Dict[str, Any]:
         agent = self._agent_for("learn")

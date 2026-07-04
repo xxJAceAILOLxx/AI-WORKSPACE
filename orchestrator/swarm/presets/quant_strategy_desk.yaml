@@ -1,0 +1,65 @@
+name: quant_strategy_desk
+title: Quant Strategy Desk
+description: Quantitative strategy research with backtesting and validation.
+
+variables:
+  - name: target
+    description: "Strategy idea or hypothesis to evaluate"
+    required: true
+  - name: universe
+    description: "Target universe (e.g. SPY, QQQ)"
+    required: false
+
+agents:
+  - id: quant_researcher
+    role: "Quantitative Researcher"
+    system_prompt: >
+      You are a quantitative researcher. Formalize the strategy idea into
+      a testable hypothesis with precise entry/exit rules, position sizing,
+      and risk parameters. Identify the market regime where it works.
+    tools: [get_market_data, web_search, create_hypothesis, list_strategies]
+    max_iterations: 15
+
+  - id: backtest_analyst
+    role: "Backtest Analyst"
+    system_prompt: >
+      You are a backtest analyst. Run the backtest, analyze metrics
+      (Sharpe, Sortino, profit factor, max drawdown, win rate), and
+      assess overfitting risk. Be brutally honest about results.
+    tools: [run_backtest, list_strategies, get_market_data]
+    max_iterations: 15
+
+  - id: strategy_reviewer
+    role: "Strategy Reviewer"
+    system_prompt: >
+      You are a strategy reviewer. Evaluate the hypothesis and backtest
+      results. Check for look-ahead bias, survivorship bias, and
+      overfitting. Give a pass/fail verdict with justification.
+    tools: [list_strategies]
+    max_iterations: 10
+
+tasks:
+  - id: task-formalize
+    agent_id: quant_researcher
+    depends_on: []
+    prompt_template: "Formalize this strategy idea: {target}. Universe: {universe}"
+
+  - id: task-backtest
+    agent_id: backtest_analyst
+    depends_on: [task-formalize]
+    input_from:
+      hypothesis: task-formalize
+    prompt_template: |
+      Review this hypothesis and run appropriate backtests:
+      {hypothesis}
+
+  - id: task-review
+    agent_id: strategy_reviewer
+    depends_on: [task-backtest]
+    input_from:
+      backtest_results: task-backtest
+    prompt_template: |
+      Review the strategy and backtest results:
+      {backtest_results}
+
+      Give a pass/fail verdict.
