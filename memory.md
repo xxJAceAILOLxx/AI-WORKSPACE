@@ -164,6 +164,8 @@ Additional agents (not in default workflow): `market_regime_detector`, `structur
 
 - **2026-07-04T05:50:36Z** - `ibs_spy`: PF 1.66, Sharpe 0.70, CAGR 8.76%, DD 21.03%, WR 64.35%, 230 trades. Verdict: validate FAILED.
 
+- **2026-07-09T12:01:20Z** - `funded_reversion`: PF 1.30, Sharpe 0.44, CAGR 1.37%, DD 6.25%, WR 58.03%, 1227 trades. Verdict: validate OK.
+
 ## 10. Open questions / TODOs
 
 - How to systematically measure "freshness" of positioning?
@@ -215,3 +217,16 @@ Additional agents (not in default workflow): `market_regime_detector`, `structur
       "win_rate": 0.6434782608695652
     }
   - notes: validate_ok=False; max_dd=21.03%; max_daily=10.40%
+- **2026-07-09T12:01:20Z** - idea: Low-Volume Pullback Reversion (LVPR) multi-ETF portfolio for prop firm challenge passing and payout; novel volume-filtered mean reversion
+  - strategy: `funded_reversion`
+  - stages: research, design, backtest, validate, deploy, monitor, learn
+  - metrics:
+    {
+      "cagr": 0.01367184373683794,
+      "max_drawdown": 0.06250157767333808,
+      "profit_factor": 1.2979070125276941,
+      "sharpe": 0.4357891519524061,
+      "trade_count": 1227.0,
+      "win_rate": 0.5802770986145069
+    }
+  - notes: validate_ok=True; max_dd=6.25%; max_daily=1.54%

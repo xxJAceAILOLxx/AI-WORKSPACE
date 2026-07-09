@@ -25,7 +25,7 @@ from __future__ import annotations
 
 # Importing each strategy module triggers its @register decorator so that
 # the registry is fully populated when callers `import backtest.strategies`.
-    from . import (  # noqa: F401
+from . import (  # noqa: F401
     dual_ma,
     fade_5bar_crypto,
     funded_reversion,

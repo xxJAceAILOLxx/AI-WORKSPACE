@@ -146,7 +146,10 @@ def funded_reversion(
         name="funded_reversion",
         trades=all_trades,
         equity=combined,
-        ohlcv=OHLCV(ticker=",".join(basket), df=pd.DataFrame(index=common)),
+        ohlcv=OHLCV(
+            ticker=",".join(basket),
+            df=pd.DataFrame(index=common, columns=["Open", "High", "Low", "Close", "Volume"]),
+        ),
         initial_capital=initial_capital,
         execution=execution,
         cost_model_name=PERCENT_10BP.name,
