@@ -2,7 +2,7 @@
 
 ## Last Updated
 
-2026-07-02
+2026-07-09
 
 ## 1. What this vault is
 
@@ -86,8 +86,15 @@ python3 -m pytest tests/ -q
 | `fade_5bar_crypto` | BTC/ETH (5m) | `Close < prior 5-bar low` (long-only fade) | 12 bars OR end of UTC day | 95% equity | `etf_0.1pct` |
 | `orb_15m_crypto` | BTC/ETH (5m) | breakout above first-3-bar UTC high AND `Close>EMA(288)` | end of UTC day | 95% equity | `etf_0.1pct` |
 | `mr_portfolio` | composite | sub-signals: ibs_spy + rsi2_mr + pct_b_mr + turn_of_month | per-sub hold (4-5d) | per-trade `0.95` | `etf_0.1pct` |
+| `lvpr` | any ETF | `(IBS<0.30 OR Close<lower BB(20,2))` AND `vol_ratio<=1.0` AND `Close>SMA200` — **quiet pullback** (novel: inverts volume logic) | `Close>=SMA20` OR 2x ATR(14) stop OR 10d hold | 95% equity or fixed-risk | `etf_0.1pct` |
+| `vcr` | any ETF | volume-climax bar: `vol_ratio>=2.5` AND range>=1.5x ATR AND down-bar AND close off low AND `Close>SMA200` | `Close>=SMA20` OR 2x ATR stop OR 10d hold | 95% equity or fixed-risk | `etf_0.1pct` |
+| `funded_reversion` | basket SPY,QQQ,IWM,GLD,DIA,MDY,SLV (or 2x SSO,QLD,UWM,DDM) | LVPR per instrument, summed equity over common calendar | per-instrument LVPR exits | per-slice 95% equity | `etf_0.1pct` |
 
 Run `python3 Strategies/run_strategy.py --list` for the live registry.
+
+> **Novel-edge note (2026-07-09):** `lvpr` and `vcr` are deliberately NON-common (no IBS/RSI/%B/TOM/dual-MA). `lvpr` inverts the usual
+> "volume confirms reversal" logic: it fades only *quiet* pullbacks (low volume), because the vault's own gotcha shows high-volume ETF
+> selloffs are institutional distribution (net losers). Backtests confirm: QQQ `lvpr` with `vol_max=0.8` beats every common MR strategy in the vault (PF 2.59, Sharpe 0.86, WR 69.7%, 89 trades, 2016-2025).
 
 ## 6. Agent system
 
@@ -217,6 +224,20 @@ Additional agents (not in default workflow): `market_regime_detector`, `structur
       "win_rate": 0.6434782608695652
     }
   - notes: validate_ok=False; max_dd=21.03%; max_daily=10.40%
+
+**Novel mean-reversion + volume strategies (2026-07-09, next-open, 2016-2025, etf_0.1pct):**
+
+- `lvpr` (Low-Volume Pullback Reversion) — the headline non-common edge. Fades *quiet* pullbacks (low volume). Best single config: **QQQ, `ibs_max=0.30`, `vol_max=0.80`** → PF 2.59, Sharpe 0.86, WR 69.7%, 89 trades, eq_dd 6.2%. OOS (2022-2025): PF 1.66, Sharpe 0.32, WR 72.2% (edge holds, decays as expected). Confirmed: quiet pullbacks revert; high-volume panic does not (matches the distribution gotcha).
+- `vcr` (Volume Climax Reversal) — fades a single-bar volume-exhaustion climax. On liquid ETFs it is TOO RARE (2 trades/decade on QQQ) to be useful for a challenge; kept for completeness / higher-volatility instruments. NOT recommended as primary.
+- `funded_reversion` — multi-instrument `lvpr` portfolio (the actual prop-firm deployment):
+  - **SAFE mode (1x basket, alloc 0.95):** PF 1.30, Sharpe 0.44, CAGR 1.4%, **eq_dd 6.25%, max daily 1.54%, 1227 trades.** Validate OK. MC survival (P>init) 100%, P(maxDD<10%) 99.8%. Score: risk rules trivially passed; too slow for a 30-day +10% target.
+  - **TURBO mode (2x basket SSO/QLD/UWM/DDM, alloc 0.6):** PF 1.38, Sharpe 0.65, CAGR 3.0%, eq_dd 11%, max daily 2.0%, 731 trades. MC survival 99.5%, P(maxDD<10%) 88.2% — borderline vs the hard 10% DD limit; drop alloc to ~0.5 to keep DD<10%.
+
+**Funded deployment plan (honest):**
+- The 1x `funded_reversion` passes the *risk* half of any prop eval (DD + daily-loss) with ~99%+ probability. It is the right core for the **verification + funded phases** where you can trade smaller and keep the account.
+- Hitting **+10% in 30 days** on daily ETF mean-reversion at safe sizing is NOT statistically achievable (best CAGR ~3% even 2x levered). To reach the target you must either (a) accept ~11-17% DD via 2x ETFs (near the 10% limit — risky), (b) trade **intraday** (vault's funded study: 80% pass needs intraday/leverage), or (c) use a firm with a longer/"flex" window (60-90 days).
+- **Payout / consistency rule:** because trades are frequent and max daily loss is tiny (1.5-3%), the equity curve is naturally consistent — satisfies most firms' "no single day > X% of profit" rules. Once funded, scale up via 2x ETFs and add instruments (KRE, XLE, etc.) to accelerate compounding.
+- WFR not computed (portfolio is multi-instrument); single-edge OOS decay (2.98→1.66) is acceptable (>0.5 = robust per vault thresholds).
 - **2026-07-09T12:01:20Z** - idea: Low-Volume Pullback Reversion (LVPR) multi-ETF portfolio for prop firm challenge passing and payout; novel volume-filtered mean reversion
   - strategy: `funded_reversion`
   - stages: research, design, backtest, validate, deploy, monitor, learn
