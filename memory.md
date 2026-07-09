@@ -243,7 +243,16 @@ Additional agents (not in default workflow): `market_regime_detector`, `structur
 - Built `lvpr_intraday` (Binance 5m, `load_intraday_binance`) reusing the LVPR logic. Tested BTCUSDT + ETHUSDT, 2021-08 → 2026-05 (~500k bars, cached).
 - **It is a net loser.** Grid over hold∈{12,24,48}, ibs_max∈{0.20,0.25}, vol_max∈{0.8,1.0}: BTC PF 0.61-0.66, WR 48-50%, eq_dd 83%; ETH PF 0.69-0.71, WR 50-51%, eq_dd 99%. Challenge pass rate = **0%** at 30/60/90-day windows (never reaches +10%; bleeds in the 2022 bear).
 - **Why:** the novel "quiet pullback = low-effort exhaustion" edge is microstructure-specific to *daily equity ETFs*, where institutional distribution on high volume is a real, documentable signature. On 24/7 retail/algorithm crypto 5m there is no such signature; long-only mean reversion is dominated by trend + fees and is ~random (WR≈50%, PF<1). The volume filter barely moves the needle.
-- **Implication:** a 30-day +10% prop pass via *intraday mean reversion* is not achievable with LVPR on crypto. Per the Funded 80% Pass Study, the working intraday crypto edges in this vault are breakout/fade (orb_15m, fade_5bar) — those were left INCOMPLETE/paused and should be finished and pass-rate tested before concluding intraday is viable. Daily LVPR remains the only validated LVPR edge.
+- **Implication:** a 30-day +10% prop pass via *intraday mean reversion* is not achievable with LVPR on crypto. Daily LVPR remains the only validated LVPR edge.
+
+**Intraday breakout/fade on crypto 5m — also NEGATIVE (2026-07-09):**
+
+Finished + pass-rate tested the two paused intraday crypto strategies (`orb_15m_crypto`, `fade_5bar_crypto`), BTCUSDT + ETHUSDT, 2021-07 → 2026-05, 10bps cost (generous vs real ~40bps taker), proper EOD daily-loss check.
+
+- `orb_15m_crypto` (15m opening-range breakout, long-only): **breakeven, not an edge.** Grid ema_period∈{63,96,288} × or_bars∈{3,6}: PF 0.94-1.02, WR ~46%, CAGR **negative** (-4% BTC / -10% ETH full; -9%/-13% in 2024-26). eq_dd 65-70%. 30d challenge pass 5-12% (variance, not edge), 60d pass 0-10%. Best config ema=288/orb=3: PF 1.02, 30d pass 11.9%, 60d 10.3%. The cited Stoic study (Sharpe~1.0) did NOT replicate on BTC/ETH with 10bps costs.
+- `fade_5bar_crypto` (5-bar breakdown fade, long-only): **net loser.** PF 0.96-0.98, WR ~47-50%, CAGR -31% BTC / -61% ETH, eq_dd 84-99%. 30d pass 0-1.7%. Confirms the original caveat: long-only captures only the losing half of the Atlas CS-Rev edge (Sharpe~4.40 was long+short); the short leg is required but the engine is long-only.
+
+**Definitive verdict:** no validated intraday crypto strategy in this vault passes a prop challenge. Long-only + no short leg + 10bps costs + crypto trend/vol = no reliable edge. To make intraday viable you must (a) add **engine-level shorting** so Atlas CS-Rev and ORB can trade both sides, and/or (b) accept that the only validated edge remains **daily LVPR on equity ETFs** (passes risk rules ~99%, too slow for the 30-day target). The vault's "80% pass needs intraday/leverage" holds — but the specific intraday crypto strategies here don't deliver it as long-only.
 - **2026-07-09T12:01:20Z** - idea: Low-Volume Pullback Reversion (LVPR) multi-ETF portfolio for prop firm challenge passing and payout; novel volume-filtered mean reversion
   - strategy: `funded_reversion`
   - stages: research, design, backtest, validate, deploy, monitor, learn
