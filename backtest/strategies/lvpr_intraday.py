@@ -16,6 +16,13 @@ Because the engine is bar-agnostic, this reuses the daily LVPR logic on a
 Volume filter still uses a 20-bar (100-min) average so it adapts to the
 faster clock.  Exit: reversion to SMA(``ma_period``), 2x ATR(14) stop, or
 ``hold``-bar time stop.
+
+.. warning::
+   Backtests (2026-07-09, BTCUSDT/ETHUSDT 5m, 2021-2025) show this is a
+   **NET LOSER** (PF 0.61-0.71, WR ~50%, eq_dd 80-99%).  The "quiet
+   pullback" edge is microstructure-specific to *daily equity ETFs* and
+   does not transfer to 24/7 retail crypto.  Kept for documentation;
+   do not trade.
 """
 
 from __future__ import annotations

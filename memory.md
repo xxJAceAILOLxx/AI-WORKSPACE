@@ -238,6 +238,12 @@ Additional agents (not in default workflow): `market_regime_detector`, `structur
 - Hitting **+10% in 30 days** on daily ETF mean-reversion at safe sizing is NOT statistically achievable (best CAGR ~3% even 2x levered). To reach the target you must either (a) accept ~11-17% DD via 2x ETFs (near the 10% limit — risky), (b) trade **intraday** (vault's funded study: 80% pass needs intraday/leverage), or (c) use a firm with a longer/"flex" window (60-90 days).
 - **Payout / consistency rule:** because trades are frequent and max daily loss is tiny (1.5-3%), the equity curve is naturally consistent — satisfies most firms' "no single day > X% of profit" rules. Once funded, scale up via 2x ETFs and add instruments (KRE, XLE, etc.) to accelerate compounding.
 - WFR not computed (portfolio is multi-instrument); single-edge OOS decay (2.98→1.66) is acceptable (>0.5 = robust per vault thresholds).
+
+**Intraday LVPR on crypto 5m — NEGATIVE result (2026-07-09):**
+- Built `lvpr_intraday` (Binance 5m, `load_intraday_binance`) reusing the LVPR logic. Tested BTCUSDT + ETHUSDT, 2021-08 → 2026-05 (~500k bars, cached).
+- **It is a net loser.** Grid over hold∈{12,24,48}, ibs_max∈{0.20,0.25}, vol_max∈{0.8,1.0}: BTC PF 0.61-0.66, WR 48-50%, eq_dd 83%; ETH PF 0.69-0.71, WR 50-51%, eq_dd 99%. Challenge pass rate = **0%** at 30/60/90-day windows (never reaches +10%; bleeds in the 2022 bear).
+- **Why:** the novel "quiet pullback = low-effort exhaustion" edge is microstructure-specific to *daily equity ETFs*, where institutional distribution on high volume is a real, documentable signature. On 24/7 retail/algorithm crypto 5m there is no such signature; long-only mean reversion is dominated by trend + fees and is ~random (WR≈50%, PF<1). The volume filter barely moves the needle.
+- **Implication:** a 30-day +10% prop pass via *intraday mean reversion* is not achievable with LVPR on crypto. Per the Funded 80% Pass Study, the working intraday crypto edges in this vault are breakout/fade (orb_15m, fade_5bar) — those were left INCOMPLETE/paused and should be finished and pass-rate tested before concluding intraday is viable. Daily LVPR remains the only validated LVPR edge.
 - **2026-07-09T12:01:20Z** - idea: Low-Volume Pullback Reversion (LVPR) multi-ETF portfolio for prop firm challenge passing and payout; novel volume-filtered mean reversion
   - strategy: `funded_reversion`
   - stages: research, design, backtest, validate, deploy, monitor, learn
