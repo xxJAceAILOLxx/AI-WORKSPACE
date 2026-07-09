@@ -25,11 +25,13 @@ from __future__ import annotations
 
 # Importing each strategy module triggers its @register decorator so that
 # the registry is fully populated when callers `import backtest.strategies`.
-from . import (  # noqa: F401
+    from . import (  # noqa: F401
     dual_ma,
     fade_5bar_crypto,
+    funded_reversion,
     ibs,
     ibs_dynamic,
+    lvpr,
     multiple_days_down,
     orb_15m_crypto,
     pct_b,
@@ -38,6 +40,7 @@ from . import (  # noqa: F401
     rsi2_qqq_enhanced,
     turn_of_month,
     vix_etn,
+    vcr,
     volume_scaled_ibs,
 )
 from .dual_ma import qqq_dual_ma
@@ -45,6 +48,7 @@ from .fade_5bar_crypto import fade_5bar_crypto
 from .orb_15m_crypto import orb_15m_crypto
 from .ibs import ibs_spy, ibs_trend, qqq_mr
 from .ibs_dynamic import ibs_dynamic
+from .lvpr import lvpr
 from .multiple_days_down import multiple_days_down
 from .pct_b import pct_b_mr
 from .portfolio import SUB_STRATEGIES, mr_portfolio
@@ -53,7 +57,9 @@ from .rsi2 import rsi2_mr
 from .rsi2_qqq_enhanced import rsi2_qqq_enhanced
 from .turn_of_month import turn_of_month_strategy
 from .vix_etn import VIX_TICKERS, vix_etn
+from .vcr import vcr
 from .volume_scaled_ibs import trades_with_vol_ratio, volume_scaled_ibs
+from .funded_reversion import funded_reversion
 
 __all__ = [
     "REGISTRY",
@@ -88,4 +94,7 @@ __all__ = [
     "mr_portfolio",
     "SUB_STRATEGIES",
     "ibs_dynamic",
+    "lvpr",
+    "vcr",
+    "funded_reversion",
 ]

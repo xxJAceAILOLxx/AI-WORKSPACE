@@ -32,7 +32,7 @@ import pandas as pd
 
 from backtest import Engine, PERCENT_10BP, load_daily
 from backtest.engine import BacktestResult
-from backtest.indicators import atr, bollinger, sma, volume_ratio
+from backtest.indicators import atr, bollinger, ibs, sma, volume_ratio
 
 from .registry import register
 
@@ -40,9 +40,9 @@ from .registry import register
 DEFAULT_START: str = "2016-01-01"
 DEFAULT_END: str = "2025-12-31"
 DEFAULT_MA_PERIOD: int = 20
-DEFAULT_Z_ENTRY: float = -2.0
+DEFAULT_IBS_MAX: float = 0.30
 DEFAULT_VOL_MAX: float = 1.00
-DEFAULT_HOLD: int = 12
+DEFAULT_HOLD: int = 10
 DEFAULT_STOP_MULT: float = 2.0
 DEFAULT_RISK_FRACTION: float = 0.10
 DEFAULT_INITIAL_CAPITAL: float = 100_000.0
@@ -54,11 +54,13 @@ def lvpr(
     start: str = DEFAULT_START,
     end: str = DEFAULT_END,
     ma_period: int = DEFAULT_MA_PERIOD,
-    z_entry: float = DEFAULT_Z_ENTRY,
+    ibs_max: float = DEFAULT_IBS_MAX,
     vol_max: float = DEFAULT_VOL_MAX,
     hold: int = DEFAULT_HOLD,
     stop_mult: float = DEFAULT_STOP_MULT,
     risk_fraction: float = DEFAULT_RISK_FRACTION,
+    size_policy: str = "percent_of_equity",
+    size_value: float = 0.95,
     execution: str = "next_open",
     initial_capital: float = DEFAULT_INITIAL_CAPITAL,
 ) -> BacktestResult:
@@ -73,15 +75,13 @@ def lvpr(
 
     close = df["Close"].astype(float)
     mean = sma(close, ma_period)
-    std = close.rolling(window=ma_period, min_periods=ma_period).std(ddof=0)
-    z = (close - mean) / std.replace(0, pd.NA)
-
     _, _, lower, _ = bollinger(close, period=ma_period, num_std=2.0)
 
+    ibs_s = ibs(df)
     vol_r = volume_ratio(df)
     sma200 = sma(close, 200)
 
-    stretched = (z <= z_entry) | (close <= lower)
+    stretched = (ibs_s < ibs_max) | (close <= lower)
     quiet = vol_r <= vol_max
     trend_ok = close > sma200
 
@@ -100,15 +100,14 @@ def lvpr(
         execution=execution,
         cost_model=PERCENT_10BP,
         initial_capital=initial_capital,
-        size_policy="fixed_risk",
-        size_value=risk_fraction * initial_capital,
+        size_policy=size_policy,
+        size_value=risk_fraction * initial_capital if size_policy == "fixed_risk" else size_value,
         stop_mult=stop_mult,
         max_hold=hold,
         atr_period=14,
     )
     eng.set_entry(entry_signal).set_exit(exit_rule)
     result = eng.run()
-    result.config["z_score"] = z
     result.config["vol_ratio"] = vol_r
     return result
 
@@ -118,7 +117,7 @@ __all__ = [
     "DEFAULT_START",
     "DEFAULT_END",
     "DEFAULT_MA_PERIOD",
-    "DEFAULT_Z_ENTRY",
+    "DEFAULT_IBS_MAX",
     "DEFAULT_VOL_MAX",
     "DEFAULT_HOLD",
     "DEFAULT_STOP_MULT",
