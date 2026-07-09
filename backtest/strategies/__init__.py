@@ -32,6 +32,7 @@ from . import (  # noqa: F401
     ibs,
     ibs_dynamic,
     lvpr,
+    lvpr_intraday,
     multiple_days_down,
     orb_15m_crypto,
     pct_b,
@@ -49,6 +50,7 @@ from .orb_15m_crypto import orb_15m_crypto
 from .ibs import ibs_spy, ibs_trend, qqq_mr
 from .ibs_dynamic import ibs_dynamic
 from .lvpr import lvpr
+from .lvpr_intraday import lvpr_intraday
 from .multiple_days_down import multiple_days_down
 from .pct_b import pct_b_mr
 from .portfolio import SUB_STRATEGIES, mr_portfolio
@@ -97,4 +99,5 @@ __all__ = [
     "lvpr",
     "vcr",
     "funded_reversion",
+    "lvpr_intraday",
 ]

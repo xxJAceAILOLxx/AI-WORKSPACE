@@ -242,6 +242,8 @@
   },
   "active": "b629032f8d7edec8",
   "lastOpenFiles": [
+    "backtest/strategies/__pycache__/lvpr_intraday.cpython-314.pyc",
+    "backtest/strategies/lvpr_intraday.py",
     "Strategies/__pycache__/run_all.cpython-314.pyc",
     "Strategies/__pycache__/run_strategy.cpython-314.pyc",
     "data/cache/SLV_2020-01-01_2021-01-01.csv",
@@ -251,8 +253,6 @@
     "data/cache/IWM_2020-01-01_2021-01-01.csv",
     "data/cache_intraday/BTCUSDT_5m_2021-01.csv",
     "data/cache_intraday/BTCUSDT_5m_2020-12.csv",
-    "data/cache_intraday/BTCUSDT_5m_2020-11.csv",
-    "data/cache_intraday/BTCUSDT_5m_2020-10.csv",
     "Strategies/lvpr_funded_reversion.md",
     "Strategies/Funded 80% Pass Strategy.md",
     "Concepts/Markov Property.md",
