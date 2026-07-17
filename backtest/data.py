@@ -156,6 +156,20 @@ import os as _os
 import time as _time
 import zipfile as _zipfile
 from typing import Optional as _Optional
+
+try:
+    import pandas as _pd
+except ImportError:  # pragma: no cover
+    _pd = None  # type: ignore
+
+
+def _is_numeric(x) -> bool:
+    """Return True if ``x`` can be parsed as a float (used to detect CSV headers)."""
+    try:
+        float(x)
+        return True
+    except (TypeError, ValueError):
+        return False
 from urllib.parse import urlencode as _urlencode
 from urllib.request import Request as _Request, urlopen as _urlopen
 
@@ -166,6 +180,7 @@ except ImportError:  # pragma: no cover - import guard
 
 
 BINANCE_VISION_BASE = "https://data.binance.vision/data/spot/monthly/klines"
+BINANCE_FUTURES_BASE = "https://data.binance.vision/data/futures/um/monthly/klines"
 HF_DATA_API_BASE = "https://api.hfdatalibrary.com/v1"
 
 
@@ -194,10 +209,10 @@ def _month_range(start: str, end: str):
         yield int(p.year), int(p.month)
 
 
-def _download_binance_zip(symbol: str, interval: str, year: int, month: int, timeout: int = 60) -> bytes:
+def _download_binance_zip(symbol: str, interval: str, year: int, month: int, timeout: int = 60, base: str = BINANCE_VISION_BASE) -> bytes:
     """Download one monthly zip from Binance public data. Raises on HTTP error."""
     fname = f"{symbol}-{interval}-{year:04d}-{month:02d}.zip"
-    url = f"{BINANCE_VISION_BASE}/{symbol}/{interval}/{fname}"
+    url = f"{base}/{symbol}/{interval}/{fname}"
     req = _Request(url, headers={"User-Agent": "backtest-framework/1.0"})
     with _urlopen(req, timeout=timeout) as resp:
         return resp.read()
@@ -235,10 +250,15 @@ def _parse_binance_csv(raw: bytes) -> pd.DataFrame:
         csv_bytes = raw
 
     df = pd.read_csv(_io.BytesIO(csv_bytes), header=None)
+    # Some Binance kline dumps (e.g. futures) include a text header row
+    # ("open_time,..."); spot dumps do not.  Drop a header if present.
+    if not _is_numeric(df.iloc[0, 0]):
+        df = df.iloc[1:].reset_index(drop=True)
     # Columns: 0=open_time, 1=open, 2=high, 3=low, 4=close, 5=volume,
     # 6=close_time, 7=quote_volume, 8=count, ...
     df = df.iloc[:, [0, 1, 2, 3, 4, 5]].copy()
     df.columns = ["_open_time", "Open", "High", "Low", "Close", "Volume"]
+    df["_open_time"] = df["_open_time"].astype(float)
     # Binance switched from millisecond to microsecond timestamps in 2025.
     # A 2025+ timestamp in ms is ~1.74e12; in us it is ~1.74e15. Auto-detect.
     first_ts = float(df["_open_time"].iloc[0])
@@ -256,6 +276,7 @@ def load_intraday_binance(
     interval: str,
     start: str,
     end: str,
+    market: str = "spot",
     cache_dir: str = "data/cache_intraday",
     timeout: int = 60,
     force: bool = False,
@@ -284,22 +305,27 @@ def load_intraday_binance(
         raise ValueError(
             f"Unsupported interval {interval!r}; expected one of {sorted(_BINANCE_INTERVALS)}"
         )
+    if market not in {"spot", "futures"}:
+        raise ValueError(f"market must be 'spot' or 'futures', got {market!r}")
     biv = _BINANCE_INTERVALS[interval]
+    base = BINANCE_VISION_BASE if market == "spot" else BINANCE_FUTURES_BASE
     _os.makedirs(cache_dir, exist_ok=True)
 
     shards: list[pd.DataFrame] = []
     for year, month in _month_range(start, end):
         shard_path = _os.path.join(
-            cache_dir, f"{symbol}_{biv}_{year:04d}-{month:02d}.csv"
+            cache_dir, f"{symbol}_{market}_{biv}_{year:04d}-{month:02d}.csv"
         )
         if _os.path.exists(shard_path) and not force:
             shard = pd.read_csv(shard_path, index_col=0, parse_dates=True)
         else:
             try:
-                raw = _download_binance_zip(symbol, biv, year, month, timeout=timeout)
+                raw = _download_binance_zip(
+                    symbol, biv, year, month, timeout=timeout, base=base
+                )
             except Exception as e:  # pragma: no cover - network dependent
                 # Missing months (e.g. before a symbol listed) -> skip silently.
-                print(f"  skip {symbol} {biv} {year:04d}-{month:02d}: {e}")
+                print(f"  skip {symbol} {market} {biv} {year:04d}-{month:02d}: {e}")
                 continue
             shard = _parse_binance_csv(raw)
             shard.to_csv(shard_path)

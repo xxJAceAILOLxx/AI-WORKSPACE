@@ -188,6 +188,51 @@ def _propagate_true(mask: pd.Series, n: int) -> pd.Series:
     return pd.Series(new, index=mask.index)
 
 
+def garch_vol(
+    close: pd.Series,
+    alpha: float = 0.15,
+    beta: float = 0.85,
+    annualize: int = 365,
+    min_periods: int = 30,
+) -> pd.Series:
+    """Annualized GARCH(1,1) volatility forecast (IGARCH when alpha+beta=1).
+
+    Uses the integrated form favoured by the "Nobel Prize method" framing::
+
+        sigma_t^2 = alpha * r_{t-1}^2 + beta * sigma_{t-1}^2
+
+    with ``alpha`` the shock weight and ``beta`` the memory weight.  The
+    video fits these to Bitcoin as 0.15 / 0.85 (sum = 1.0), which
+    reduces to a RiskMetrics EWMA with ``lambda = beta``.  The forecast
+    at bar ``t`` is the variance expected for bar ``t+1`` (no look-ahead:
+    it only uses returns through ``t-1``), annualized by ``sqrt(annualize)``.
+
+    Returns NaN until ``min_periods`` of returns are available so the
+    warm-up does not leak future information.
+    """
+    if not (0.0 <= alpha <= 1.0 and 0.0 <= beta <= 1.0):
+        raise ValueError("garch_vol requires 0 <= alpha, beta <= 1")
+    s = close.astype(float)
+    log_ret = np.log(s / s.shift(1))
+    sq = (log_ret ** 2).fillna(0.0).to_numpy()
+
+    n = len(sq)
+    var = np.zeros(n, dtype=float)
+    # Seed with the sample variance of the first `min_periods` returns.
+    seed = float(np.mean(sq[:max(min_periods, 1)])) if n else 0.0
+    var[0] = seed
+    for i in range(1, n):
+        var[i] = alpha * sq[i - 1] + beta * var[i - 1]
+    # Replace any non-finite seed/early values with the long-run EWMA.
+    var = np.where(np.isfinite(var), var, seed)
+
+    daily = np.sqrt(np.clip(var, 0.0, None))
+    ann = daily * np.sqrt(float(annualize))
+    out = pd.Series(ann, index=close.index, dtype=float)
+    out.iloc[:min_periods] = np.nan
+    return out
+
+
 def realized_vol(close: pd.Series, period: int = 10) -> pd.Series:
     """Annualized realized volatility from log returns.
 
@@ -196,3 +241,126 @@ def realized_vol(close: pd.Series, period: int = 10) -> pd.Series:
     """
     log_ret = np.log(close.astype(float) / close.astype(float).shift(1))
     return log_ret.rolling(window=period, min_periods=period).std(ddof=0) * np.sqrt(252)
+
+
+def vwap(df: pd.DataFrame, daily_reset: bool = True) -> pd.Series:
+    """Volume-Weighted Average Price.
+
+    Uses the typical price ``(High + Low + Close) / 3`` as the price weight.
+    By default the cumulative VWAP resets at the start of each calendar day
+    (``daily_reset=True``), which is the meaningful session VWAP for
+    intraday strategies on 24/7 markets.  Pass ``daily_reset=False`` for a
+    single cumulative VWAP across the whole series.
+    """
+    typical = (df["High"] + df["Low"] + df["Close"]).astype(float) / 3.0
+    pv = typical * df["Volume"].astype(float)
+    if daily_reset:
+        grp = df.index.normalize()
+        cum_pv = pv.groupby(grp).cumsum()
+        cum_v = df["Volume"].astype(float).groupby(grp).cumsum()
+    else:
+        cum_pv = pv.cumsum()
+        cum_v = df["Volume"].astype(float).cumsum()
+    return cum_pv / cum_v.replace(0, np.nan)
+
+
+def session_vwap(df: pd.DataFrame) -> pd.Series:
+    """Alias for :func:`vwap` with a daily (session) reset — the common case."""
+    return vwap(df, daily_reset=True)
+
+
+def vwap_deviation(df: pd.DataFrame, daily_reset: bool = True) -> pd.Series:
+    """Percent deviation of Close from VWAP: ``(Close - VWAP) / VWAP``.
+
+    Positive values mean price is above the session VWAP (overbought-ish);
+    negative values mean below (oversold-ish).  Useful directly as a
+    mean-reversion signal.
+    """
+    v = vwap(df, daily_reset=daily_reset)
+    return (df["Close"].astype(float) - v) / v.replace(0, np.nan)
+
+
+def value_area_by_day(
+    df: pd.DataFrame,
+    n_bins: int = 24,
+    va_pct: float = 0.70,
+) -> pd.DataFrame:
+    """Per-day volume profile: POC, Value-Area High/Low, and shape flags.
+
+    For each calendar day the bars are binned by price and the volume per bin
+    is summed.  The Point of Control (``poc``) is the highest-volume bin; the
+    Value Area (``vah``/``val``) is expanded from the POC until cumulative
+    volume reaches ``va_pct`` of the day's total.
+
+    Returns a DataFrame indexed by the day's first timestamp with columns:
+    ``poc``, ``vah``, ``val``, ``poc_pos`` (POC position in the day's range,
+    0=low, 1=high), ``close`` and ``close_in_va`` (whether the day closed
+    inside its own value area), and ``is_consolidation`` (a balanced/"D-shaped"
+    profile: POC near the range middle and the close inside value).
+    """
+    if not isinstance(df.index, pd.DatetimeIndex):
+        raise TypeError("value_area_by_day requires a DatetimeIndex")
+    if not 0.0 < va_pct <= 1.0:
+        raise ValueError("va_pct must be in (0, 1]")
+
+    days = df.groupby(df.index.date)
+    records = []
+    for day, g in days:
+        if len(g) == 0:
+            continue
+        lo = float(g["Low"].min())
+        hi = float(g["High"].max())
+        if hi <= lo:
+            continue
+        edges = np.linspace(lo, hi, n_bins + 1)
+        close = g["Close"].to_numpy(dtype=float)
+        vol = g["Volume"].to_numpy(dtype=float)
+        bin_idx = np.clip(np.digitize(close, edges) - 1, 0, n_bins - 1)
+        hist = np.zeros(n_bins, dtype=float)
+        np.add.at(hist, bin_idx, vol)
+
+        poc_i = int(np.argmax(hist))
+        poc = float((edges[poc_i] + edges[poc_i + 1]) / 2.0)
+        total = float(hist.sum())
+        if total <= 0:
+            continue
+
+        # Expand the value area outward from the POC until coverage reached.
+        cum = hist[poc_i]
+        lo_i, hi_i = poc_i, poc_i
+        while cum < va_pct * total and (lo_i > 0 or hi_i < n_bins - 1):
+            left = hist[lo_i - 1] if lo_i > 0 else -1.0
+            right = hist[hi_i + 1] if hi_i < n_bins - 1 else -1.0
+            if left >= right:
+                lo_i -= 1
+                cum += hist[lo_i]
+            else:
+                hi_i += 1
+                cum += hist[hi_i]
+        val = float(edges[lo_i])
+        vah = float(edges[hi_i + 1])
+
+        day_close = float(g["Close"].iloc[-1])
+        poc_pos = (poc - lo) / (hi - lo) if hi > lo else 0.5
+        close_in_va = bool(val <= day_close <= vah)
+        is_consolidation = bool((0.35 <= poc_pos <= 0.65) and close_in_va)
+
+        records.append(
+            {
+                "poc": poc,
+                "vah": vah,
+                "val": val,
+                "poc_pos": poc_pos,
+                "close": day_close,
+                "close_in_va": close_in_va,
+                "is_consolidation": is_consolidation,
+            }
+        )
+
+    if not records:
+        return pd.DataFrame(
+            columns=["poc", "vah", "val", "poc_pos", "close", "close_in_va", "is_consolidation"]
+        )
+    out = pd.DataFrame(records)
+    out.index = pd.to_datetime([d for d in days.groups.keys()])
+    return out

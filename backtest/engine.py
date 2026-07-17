@@ -27,6 +27,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Tuple
 
+import numpy as np
 import pandas as pd
 
 from .costs import CostModel, PERCENT_10BP
@@ -121,15 +122,21 @@ class Engine:
         stop_mult: float = 0.0,
         max_hold: int = 0,
         atr_period: int = 14,
+        vol_series: "pd.Series | None" = None,
+        target_vol: float = 0.15,
+        max_leverage: float = 3.0,
     ) -> None:
         if execution not in {"next_open", "close"}:
             raise ValueError(f"execution must be 'next_open' or 'close', got {execution!r}")
-        if size_policy not in {"percent_of_equity", "fixed_risk"}:
+        if size_policy not in {"percent_of_equity", "fixed_risk", "vol_target"}:
             raise ValueError(
-                f"size_policy must be 'percent_of_equity' or 'fixed_risk', got {size_policy!r}"
+                f"size_policy must be 'percent_of_equity', 'fixed_risk' or "
+                f"'vol_target', got {size_policy!r}"
             )
         if size_policy == "fixed_risk" and stop_mult <= 0:
             raise ValueError("fixed_risk sizing requires stop_mult > 0")
+        if size_policy == "vol_target" and vol_series is None:
+            raise ValueError("vol_target sizing requires a vol_series (forecast vol)")
 
         self.ohlcv = ohlcv
         self.name = name
@@ -141,6 +148,9 @@ class Engine:
         self.stop_mult = float(stop_mult)
         self.max_hold = int(max_hold)
         self.atr_period = int(atr_period)
+        self.vol_series = vol_series
+        self.target_vol = float(target_vol)
+        self.max_leverage = float(max_leverage)
 
         self._entry_signal: Optional[pd.Series] = None
         self._exit_rule: Optional[ExitRule] = None
@@ -148,10 +158,20 @@ class Engine:
     # -- Configuration ------------------------------------------------------
 
     def set_entry(self, signal: EntrySignal) -> "Engine":
-        """Register the entry signal.  Must be a boolean Series aligned to the OHLCV index."""
+        """Register the entry signal aligned to the OHLCV index.
+
+        Accepts either:
+
+        * a **boolean** Series (long-only) — ``True`` means enter long, or
+        * a **signed integer/float** Series with values in ``{-1, 0, 1}`` —
+          ``+1`` enters long, ``-1`` enters short, ``0`` does nothing.
+
+        The raw series is stored as-is so the sign (trade direction) is
+        preserved; the engine reads the direction at decision time.
+        """
         if not isinstance(signal, pd.Series):
             raise TypeError("entry signal must be a pandas Series")
-        self._entry_signal = signal.astype(bool)
+        self._entry_signal = signal
         return self
 
     def set_exit(self, rule: ExitRule) -> "Engine":
@@ -181,8 +201,16 @@ class Engine:
                 config=self._config_dict(),
             )
 
-        signal = self._entry_signal.reindex(df.index, fill_value=False)
+        signal = self._entry_signal.reindex(df.index, fill_value=0)
         atr_series = atr(df, period=self.atr_period).fillna(0.0)
+
+        # Vol-target forecast (annualized) aligned to the index; looked up
+        # per-bar inside _open_position.  Warm-up / missing values become
+        # 0.0 so the position simply stays flat until the forecast is live.
+        if self.vol_series is not None:
+            vol_lookup = self.vol_series.reindex(df.index, fill_value=0.0).fillna(0.0)
+        else:
+            vol_lookup = None
 
         cash = self.initial_capital
         position: Optional[dict] = None
@@ -204,9 +232,10 @@ class Engine:
             entry_price = position["entry_price"]
             shares = position["shares"]
             pnl_gross = (fill_price - entry_price) * shares
-            exit_cost = self.cost_model.cost(shares, 0.0, fill_price)
+            exit_cost = self.cost_model.cost(abs(shares), 0.0, fill_price)
             pnl_net = pnl_gross - exit_cost
             cash += shares * fill_price - exit_cost
+            notional = abs(entry_price * shares)
             trades.append(
                 Trade(
                     entry_date=position["entry_date"],
@@ -215,7 +244,7 @@ class Engine:
                     exit_price=fill_price,
                     shares=shares,
                     pnl=pnl_net,
-                    return_pct=pnl_net / (entry_price * shares) if entry_price * shares else 0.0,
+                    return_pct=pnl_net / notional if notional else 0.0,
                     hold_days=max(0, fill_idx - position["entry_idx"]),
                     exit_reason=reason,
                     entry_cost=position.get("entry_cost", 0.0),
@@ -224,23 +253,36 @@ class Engine:
             )
             position = None
 
-        def _open_position(fill_price: float, fill_idx: int, atr_at_signal: float) -> None:
+        def _open_position(
+            fill_price: float, fill_idx: int, atr_at_signal: float, side: int
+        ) -> None:
             nonlocal position, cash, pending_entry
+            side = int(side)
             if self.stop_mult > 0 and atr_at_signal > 0:
-                stop_price = fill_price - self.stop_mult * atr_at_signal
+                if side > 0:
+                    stop_price = fill_price - self.stop_mult * atr_at_signal
+                else:
+                    stop_price = fill_price + self.stop_mult * atr_at_signal
             else:
                 stop_price = 0.0
-            shares = self._compute_shares(cash, fill_price, stop_price)
-            if shares <= 0:
+            fcst_vol = (
+                float(vol_lookup.iloc[fill_idx])
+                if (self.size_policy == "vol_target" and vol_lookup is not None)
+                else 0.0
+            )
+            shares_base = self._compute_shares(cash, fill_price, stop_price, fcst_vol)
+            if shares_base <= 0:
                 pending_entry = None
                 return
-            entry_cost = self.cost_model.cost(shares, fill_price, 0.0)
+            shares = shares_base * side
+            entry_cost = self.cost_model.cost(abs(shares), fill_price, 0.0)
             cash -= entry_cost + shares * fill_price
             position = {
                 "entry_idx": fill_idx,
                 "entry_date": df.index[fill_idx],
                 "entry_price": fill_price,
                 "shares": shares,
+                "side": side,
                 "stop_price": stop_price,
                 "atr_entry": atr_at_signal,
                 "entry_cost": entry_cost,
@@ -260,16 +302,25 @@ class Engine:
             # ---- 2. Resolve pending entry at this bar's Open (next_open mode) ----
             if position is None and pending_entry is not None:
                 fill_price = float(bar["Open"])
-                _open_position(fill_price, i, pending_entry["atr_at_signal"])
+                _open_position(fill_price, i, pending_entry["atr_at_signal"], pending_entry["side"])
 
             # ---- 3. Decide new entry (only if flat) ----
             if position is None and pending_entry is None and bool(signal.iloc[i]):
                 atr_at_signal = float(atr_series.iloc[i])
+                raw = signal.iloc[i]
+                if isinstance(raw, (bool, np.bool_)):
+                    side = 1 if bool(raw) else 0
+                else:
+                    side = int(np.sign(raw))
                 if self.execution == "close":
-                    _open_position(float(bar["Close"]), i, atr_at_signal)
+                    _open_position(float(bar["Close"]), i, atr_at_signal, side)
                 else:  # next_open
                     if i + 1 < n:
-                        pending_entry = {"exec_idx": i + 1, "atr_at_signal": atr_at_signal}
+                        pending_entry = {
+                            "exec_idx": i + 1,
+                            "atr_at_signal": atr_at_signal,
+                            "side": side,
+                        }
 
             # ---- 4. Evaluate exits while in a position ----
             if position is not None:
@@ -277,7 +328,13 @@ class Engine:
                 days_held = max(1, i - position["entry_idx"] + 1)
 
                 stop_price = position["stop_price"]
-                stop_hit = self.stop_mult > 0 and stop_price > 0 and float(bar["Low"]) <= stop_price
+                side = position.get("side", 1)
+                stop_hit = False
+                if self.stop_mult > 0 and stop_price > 0:
+                    if side > 0:
+                        stop_hit = float(bar["Low"]) <= stop_price
+                    else:
+                        stop_hit = float(bar["High"]) >= stop_price
                 rule_exit: Optional[Tuple[str, float]] = None
                 if not stop_hit and self._exit_rule is not None:
                     state = EngineState(
@@ -355,7 +412,7 @@ class Engine:
     # -- Helpers ------------------------------------------------------------
 
     def _compute_shares(
-        self, cash: float, entry_price: float, stop_price: float
+        self, cash: float, entry_price: float, stop_price: float, fcst_vol: float = 0.0
     ) -> int:
         if entry_price <= 0:
             return 0
@@ -364,8 +421,23 @@ class Engine:
             if alloc <= 0:
                 return 0
             return int(alloc // entry_price)
+        if self.size_policy == "vol_target":
+            # Inverse-vol sizing: target a constant annualized volatility by
+            # scaling notional as target_vol / forecast_vol.  ``size_value``
+            # is the full-size equity fraction (e.g. 0.95); the forecast
+            # vol is the GARCH/realized series aligned to the entry bar.
+            if fcst_vol <= 0:
+                return 0
+            base_notional = self.size_value * cash
+            desired = (self.target_vol / fcst_vol) * base_notional
+            # Cap gross notional so calm regimes can't lever astronomically.
+            cap = self.max_leverage * cash
+            desired = max(-cap, min(cap, desired))
+            if desired == 0:
+                return 0
+            return int(desired // entry_price)
         # fixed_risk
-        risk_per_share = entry_price - stop_price
+        risk_per_share = abs(entry_price - stop_price)
         if risk_per_share <= 0:
             return 0
         return int(self.size_value // risk_per_share)
@@ -377,6 +449,8 @@ class Engine:
             "initial_capital": self.initial_capital,
             "size_policy": self.size_policy,
             "size_value": self.size_value,
+            "target_vol": self.target_vol,
+            "max_leverage": self.max_leverage,
             "stop_mult": self.stop_mult,
             "max_hold": self.max_hold,
             "atr_period": self.atr_period,

@@ -2,7 +2,7 @@
 
 ## Last Updated
 
-2026-07-09
+2026-07-10
 
 ## 1. What this vault is
 
@@ -86,9 +86,11 @@ python3 -m pytest tests/ -q
 | `fade_5bar_crypto` | BTC/ETH (5m) | `Close < prior 5-bar low` (long-only fade) | 12 bars OR end of UTC day | 95% equity | `etf_0.1pct` |
 | `orb_15m_crypto` | BTC/ETH (5m) | breakout above first-3-bar UTC high AND `Close>EMA(288)` | end of UTC day | 95% equity | `etf_0.1pct` |
 | `mr_portfolio` | composite | sub-signals: ibs_spy + rsi2_mr + pct_b_mr + turn_of_month | per-sub hold (4-5d) | per-trade `0.95` | `etf_0.1pct` |
-| `lvpr` | any ETF | `(IBS<0.30 OR Close<lower BB(20,2))` AND `vol_ratio<=1.0` AND `Close>SMA200` — **quiet pullback** (novel: inverts volume logic) | `Close>=SMA20` OR 2x ATR(14) stop OR 10d hold | 95% equity or fixed-risk | `etf_0.1pct` |
+| `lvpr` | any ETF | `(IBS<0.40 OR Close<lower BB(20,2))` AND `vol_ratio<=0.80` AND `Close>SMA200` — **quiet pullback** (novel: inverts volume logic) | `Close>=SMA20` OR 3x ATR(14) stop OR 10d hold | 95% equity or fixed-risk | `etf_0.1pct` |
 | `vcr` | any ETF | volume-climax bar: `vol_ratio>=2.5` AND range>=1.5x ATR AND down-bar AND close off low AND `Close>SMA200` | `Close>=SMA20` OR 2x ATR stop OR 10d hold | 95% equity or fixed-risk | `etf_0.1pct` |
 | `funded_reversion` | basket SPY,QQQ,IWM,GLD,DIA,MDY,SLV (or 2x SSO,QLD,UWM,DDM) | LVPR per instrument, summed equity over common calendar | per-instrument LVPR exits | per-slice 95% equity | `etf_0.1pct` |
+| `vwap_reversion` | BTC/ETH (5m) | two-sided VWAP deviation: `\|Close-VWAP\|/VWAP > entry_dev` AND `vol_ratio>=vol_min`; `mode=reversion` (long below / short above) or `mode=momentum` (long above / short below) | revert to VWAP OR ATR stop OR max_hold OR EOD | 95% equity (signed, allows shorts) | `etf_0.1pct` |
+| `vp_consolidation_fade` | BTC/ETH (5m) | prior-day volume profile is "D-shaped" consolidation (POC mid-range + close inside value); next day fade the edges: **short at prior VAH, long at prior VAL** (cross trigger) | revert to prior-day POC OR ATR stop OR max_hold OR EOD | 95% equity (signed, allows shorts) | `etf_0.1pct` |
 
 Run `python3 Strategies/run_strategy.py --list` for the live registry.
 
@@ -120,6 +122,9 @@ Additional agents (not in default workflow): `market_regime_detector`, `structur
 - **No external LLM calls.** `orchestrator/` only formats and prints prompts + calls the local registry runner.
 - **Registry-based strategies.** New strategy = one file in `backtest/strategies/` with `@register("name")`.
 - **Vault left intact.** Only Python reorganised; all `.md` notes remain.
+- **Engine supports shorting.** `set_entry` accepts a signed Series in `{-1, 0, +1}` (`+1` long, `-1` short, `0` flat); boolean signals remain long-only for backward compatibility. Position `shares` can be negative; PnL, stops (above entry for shorts), sizing, and cash accounting all handle the sign. Added `vwap`/`session_vwap`/`vwap_deviation` indicators for volume-based intraday work.
+- **Intraday loader supports futures.** `load_intraday_binance(..., market="futures")` pulls Binance USDT‑perp klines from `data.binance.vision/data/futures/um/...` (spot is the default). `_parse_binance_csv` now skips a header row if present (futures dumps include one) and force-casts the timestamp column to float (microsecond auto-detect preserved). Enables basis/funding research.
+- **LVPR defaults optimized & OOS-validated (2026-07-10).** After an IS(2016-22)→OOS(2023-25) grid search across a 7‑ETF basket, the `lvpr` defaults were updated to `ibs_max=0.40, vol_max=0.80, hold=10, stop_mult=3.0` (was 0.30/1.0/10/2.0). `vol_max=0.80` (quieter pullbacks) + wider 3× ATR stop is the robust core. Basket WFR 0.81–0.89 (robust, not overfit).
 
 ## 8. Critical gotchas
 
@@ -266,3 +271,19 @@ Finished + pass-rate tested the two paused intraday crypto strategies (`orb_15m_
       "win_rate": 0.5802770986145069
     }
   - notes: validate_ok=True; max_dd=6.25%; max_daily=1.54%
+
+**VWAP Reversion — two-sided, 5m crypto (2026-07-10, full 2021-07 → 2026-05, next-open, etf_0.1pct):** NEGATIVE. Engine now supports shorting (signed entry signals `{-1,0,1}`), so this trades both sides of the session VWAP with a volume-confirmed deviation filter. Best config (reversion, `entry_dev=0.015`, `vol_min=1.5`, `hold=96`, no stop): BTC PF 0.92, Sharpe -0.03, WR 55.9%, DD 59.5%, 958 trades (L471/S487); ETH PF 0.76, Sharpe -0.07, WR 57.3%, DD 97.3%, 2340 trades. `mode=momentum` is worse (PF 0.62-0.66). Adding an ATR stop collapses WR to ~33% (stops are run constantly in chop). Definitive verdict: even **two-sided** VWAP mean reversion is a net loser on crypto 5m — the new shorting capability does not rescue it. Confirms the vault's intraday-crypto verdict: long-only OR two-sided, VWAP/volume reversion fails; crypto 5m needs a genuinely different edge (or the verified daily LVPR on equity ETFs). Optimizer: `Strategies/optimize_vwap_5m.py`.
+
+**VWAP Reversion on GOLD (PAXGUSDT 5m, 2021-07 → 2026-05) — MARGINAL, not tradeable.** Gold (tested via PAXGUSDT, a 1:1 gold-backed Binance token; XAUUSDT is NOT in the Binance Vision archive) is the *only* asset where VWAP reversion is PF > 1: reversion mode, `entry_dev=0.015`, `vol_min=1.0`, **no stop**, `hold=96` → PF **1.08**, WR 57.4%, but **Sharpe ≈ 0.00** and **DD 28.1%** (n=129); `hold=48` → PF 1.07, WR 53%, Sharpe ~0, DD 28.8%. Adding the 1.5×ATR stop (which produced a spurious PF 1.37 on a 2yr sub-window, n≈57) *kills* it on the full sample (WR collapses to 32.8%, PF 0.94–1.00) — same stop pathology as crypto. So gold mean-reverts more than crypto (the microstructure difference is real) but the edge is weak/high-drawdown/zero-Sharpe — not a tradeable strategy, just the least-bad VWAP result. Confirms: VWAP reversion is not a viable edge on any 5m asset tested (crypto net-negative, gold marginal PF~1.07 / Sharpe~0).
+
+**LVPR parameter optimization (2026-07-10, IS 2016-22 / OOS 2023-25, 7‑ETF basket SPY/QQQ/IWM/DIA/MDY/GLD/SLV, 81 valid param combos).** Best IS config `ibs_max=0.40, vol_max=0.80, hold=10, stop_mult=3.0` → IS basket PF 1.65 / Sharpe 0.36 / WR 61.5% (587 trades); **OOS basket PF 1.46 / Sharpe 0.29 / WR 58.9% (238 trades); WFR 0.81–0.89 → ROBUST (not overfit).** Full 2016-25 basket avg PF 1.52 / Sharpe 0.34. Per‑ticker OOS shows the edge is **concentrated in metals + smaller‑caps**: GLD PF 2.28/Sharpe 1.07, SLV 2.22/0.70, MDY 1.58/0.52, IWM 1.50/0.38, DIA 1.31/0.15 — while **SPY (0.65/−0.43) and QQQ (0.71/−0.34) LOST OOS** (2023-25 bull trend ran over mean‑reversion). Defaults updated to the validated config. Takeaway: deploy LVPR on GLD/SLV/MDY/IWM, not the mega‑caps; the earlier "QQQ PF 2.59" was a full‑sample number that decayed OOS. Optimizer: `Strategies/optimize_lvpr.py`.
+
+**Equity 5m port (2026-07-10):** `vwap_reversion` accepts `source="hf"` which loads HF Data Library 1m bars and resamples to 5m — the code path is wired, but it requires `HF_DATA_API_KEY` (not set in this environment), so the equity 5m backtest has NOT been run. Daily LVPR remains the only validated volume edge.
+
+**HFT edge proposals — EMPIRICAL TEST (2026-07-10, BTCUSDT 1m spot+perp, 2024, 527,040 bars, vectorized, costs shown maker/taker):** All three proposed HFT edges FAILED. Methodology in `Strategies/test_hft_1m.py` (downloads Binance perp+spot 1m; S3 is *literal*, S1/S2 are *mechanism proxies* because this env has no L2, no odd-lot tick feed, and no equity-futures data).
+- **S3 funding basis microburst (LITERAL):** trade perp↔spot convergence around 00/08/16 UTC funding. Raw PF **0.58**, WR 42.5% — basis *diverges*, does not snap to zero. After maker costs PF 0.00 (−8 bps/trade). Dead even gross.
+- **S1 crypto→equity lead-lag (PROXY = BTC perp leads BTC spot, same fast-leads-slow microstructure):** enter spot in perp z‑score direction when spot moved less. 18,991 trades; raw PF **1.03**, +0.20 bps/trade, per‑trade IR ≈ 0.01 → Sharpe 1.36 (i.i.d.). After maker costs PF **0.55** (−3.8 bps/trade). Razor‑thin edge, killed by costs.
+- **S2 odd‑lot clustering (PROXY = 1m volume‑imbalance burst continuation on perp):** raw PF **0.93**, WR 49%. Dead even gross; after costs PF 0.61.
+- **Conclusion:** NONE clears Sharpe ≥ 1.5 after costs. This is now the **5th–7th** failed intraday/crypto edge (after `orb_15m_crypto`, `fade_5bar_crypto`, `vwap_reversion`, `vp_consolidation_fade`). The repeated failure of every sub‑5‑min / intraday crypto microstructure idea strongly suggests the only durable validated edge in this vault remains **daily LVPR on equity ETFs**. The exact odd‑lot signal (S2) still needs a paid tick feed to test literally, but the flow‑continuation proxy is not encouraging.
+
+**Volume-Profile Consolidation Fade — 5m crypto (2026-07-10, full 2021-07 → 2026-05, next-open, etf_0.1pct):** NEGATIVE. New `value_area_by_day` indicator builds a per-session volume profile (POC / VAH / VAL, 70% value area) and flags "D-shaped" consolidation days (POC mid-range + close inside value; 516/1796 BTC days qualified). Next session fades the edges: short at prior VAH, long at prior VAL, exit on reversion to prior POC. Full-sample best: BTC PF **0.89**, Sharpe **-0.08**, WR 35.6% (with 1.5×ATR stop, DD 43.9%, 922 trades); without stop WR 66.1% but PF **0.87** and DD 54% (trend-day losers dominate). ETH worse: PF 0.79 (stop) / 0.71 (no stop), Sharpe -0.14 / -0.09. The high win rate (61-66% no-stop) confirms mean reversion *usually* works, but the infrequent trend-day failures (uncapped) sink PF < 1. Verdict: even volume-profile structure + two-sided shorts does not produce a positive edge on crypto 5m. This is the 4th failed intraday-crypto strategy (after `orb_15m_crypto`, `fade_5bar_crypto`, `vwap_reversion`); the vault's intraday-crypto verdict is now very robust. Optimizer: `Strategies/optimize_vp_fade_5m.py`.

@@ -43,6 +43,8 @@ from . import (  # noqa: F401
     vix_etn,
     vcr,
     volume_scaled_ibs,
+    vwap_reversion,
+    vp_consolidation_fade,
 )
 from .dual_ma import qqq_dual_ma
 from .fade_5bar_crypto import fade_5bar_crypto
@@ -62,6 +64,9 @@ from .vix_etn import VIX_TICKERS, vix_etn
 from .vcr import vcr
 from .volume_scaled_ibs import trades_with_vol_ratio, volume_scaled_ibs
 from .funded_reversion import funded_reversion
+from .vwap_reversion import vwap_reversion
+from .vp_consolidation_fade import vp_consolidation_fade
+from .garch import ASSETS, _run
 
 __all__ = [
     "REGISTRY",
@@ -100,4 +105,22 @@ __all__ = [
     "vcr",
     "funded_reversion",
     "lvpr_intraday",
+    "vwap_reversion",
+    "vp_consolidation_fade",
+    "garch_ema_btc",
+    "ema_fixed_btc",
+    "garch_ema_qqq",
+    "ema_fixed_qqq",
+    "garch_ema_eth",
+    "ema_fixed_eth",
+    "garch_ema_sol",
+    "ema_fixed_sol",
+    "garch_ema_bnb",
+    "ema_fixed_bnb",
+    "garch_ema_spy",
+    "ema_fixed_spy",
+    "garch_ema_dia",
+    "ema_fixed_dia",
+    "garch_ema_iwm",
+    "ema_fixed_iwm",
 ]

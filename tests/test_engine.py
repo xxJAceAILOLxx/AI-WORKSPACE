@@ -425,3 +425,107 @@ def test_engine_state_fields_populated(synthetic_ohlcv, entry_signal):
     assert seen["equity"] > 0
     assert seen["atr_entry"] >= 0
     assert seen["atr_now"] >= 0
+
+
+# ---------------------------------------------------------------------------
+# Short selling (signed entries)
+# ---------------------------------------------------------------------------
+
+
+def _make_trend_ohlcv(n=120, start="2022-01-03", seed=7, base_price=100.0):
+    """Deterministic down-then-up series so a short profits on the first half."""
+    rng = np.random.default_rng(seed)
+    dates = pd.bdate_range(start=start, periods=n)
+    # First half declines, second half rises.
+    drift = np.concatenate([np.full(n // 2, -0.01), np.full(n - n // 2, 0.01)])
+    rets = drift + rng.normal(0, 0.002, size=n)
+    close = base_price * np.exp(np.cumsum(rets))
+    open_ = np.empty(n)
+    open_[0] = base_price
+    open_[1:] = close[:-1]
+    high = np.maximum(open_, close) * 1.001
+    low = np.minimum(open_, close) * 0.999
+    volume = np.full(n, 1_000_000.0)
+    df = pd.DataFrame(
+        {"Open": open_, "High": high, "Low": low, "Close": close, "Volume": volume},
+        index=dates,
+    )
+    return from_dataframe("TR", df)
+
+
+def test_short_entry_profits_on_declining_series():
+    """A signed -1 entry on a falling series must produce a profitable short."""
+    ohlcv = _make_trend_ohlcv()
+    s = pd.Series(0, index=ohlcv.df.index, dtype=int)
+    s.iloc[2] = -1  # short at bar 2 (early in the decline)
+    eng = Engine(ohlcv, name="short", execution="close", max_hold=10)
+    eng.set_entry(s).set_exit(lambda st: ("h", 0.0) if st.days_held >= 10 else None)
+    res = eng.run()
+    assert res.trades, "expected a short trade"
+    t = res.trades[0]
+    assert t.shares < 0, "short should have negative shares"
+    assert t.pnl > 0, "short on a declining series should be profitable"
+    # Manual PnL check: (entry - exit) * |shares| - exit cost.  (Entry cost is a
+    # separate cash debit at open, matching the long-side accounting convention.)
+    gross = (t.entry_price - t.exit_price) * abs(t.shares)
+    assert t.pnl == pytest.approx(gross - t.exit_cost)
+
+
+def _make_rising_ohlcv(n=80, start="2022-01-03", seed=9, base_price=100.0):
+    """Deterministic series that rises after the first few bars."""
+    rng = np.random.default_rng(seed)
+    dates = pd.bdate_range(start=start, periods=n)
+    drift = np.concatenate([np.full(3, 0.0), np.full(n - 3, 0.012)])
+    rets = drift + rng.normal(0, 0.002, size=n)
+    close = base_price * np.exp(np.cumsum(rets))
+    open_ = np.empty(n)
+    open_[0] = base_price
+    open_[1:] = close[:-1]
+    high = np.maximum(open_, close) * 1.001
+    low = np.minimum(open_, close) * 0.999
+    volume = np.full(n, 1_000_000.0)
+    df = pd.DataFrame(
+        {"Open": open_, "High": high, "Low": low, "Close": close, "Volume": volume},
+        index=dates,
+    )
+    return from_dataframe("UP", df)
+
+
+def test_signed_signal_long_side_unchanged():
+    """A +1 signed signal must behave identically to the boolean long-only path."""
+    ohlcv = from_dataframe("X", _make_synthetic_ohlcv(n=120, seed=4))
+    bool_sig = pd.Series(False, index=ohlcv.df.index)
+    bool_sig.iloc[10::20] = True
+    int_sig = bool_sig.astype(int)  # +1 / 0
+
+    eng_b = Engine(ohlcv, name="b", execution="close", max_hold=3)
+    eng_b.set_entry(bool_sig).set_exit(lambda s: ("h", 0.0) if s.days_held >= 3 else None)
+    res_b = eng_b.run()
+
+    eng_i = Engine(ohlcv, name="i", execution="close", max_hold=3)
+    eng_i.set_entry(int_sig).set_exit(lambda s: ("h", 0.0) if s.days_held >= 3 else None)
+    res_i = eng_i.run()
+
+    assert len(res_b.trades) == len(res_i.trades)
+    for tb, ti in zip(res_b.trades, res_i.trades):
+        assert tb.entry_price == pytest.approx(ti.entry_price)
+        assert tb.exit_price == pytest.approx(ti.exit_price)
+        assert tb.shares == ti.shares
+        assert tb.pnl == pytest.approx(ti.pnl)
+
+
+def test_short_atr_stop_triggers_on_rally():
+    """A short with a tight ATR stop is stopped out when price rallies above entry."""
+    ohlcv = _make_rising_ohlcv()
+    s = pd.Series(0, index=ohlcv.df.index, dtype=int)
+    s.iloc[5] = -1
+    eng = Engine(
+        ohlcv, name="ss", execution="close", stop_mult=0.5, atr_period=3, max_hold=60
+    )
+    eng.set_entry(s)
+    eng.set_exit(lambda st: ("h", 0.0) if st.days_held >= 60 else None)
+    res = eng.run()
+    assert res.trades
+    # The series rallies after bar 3, so the short stop above entry should fire.
+    assert any(t.exit_reason == "stop" for t in res.trades)
+    assert res.trades[0].pnl < 0, "a stopped short on a rally should lose"
